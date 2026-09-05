@@ -24,7 +24,7 @@ This repo is built by two developers over 24 hours in a **VS Code Live Share** s
 
 **Guest: you do not need `.env.local` and cannot run terminal commands.** The host runs `npm run dev` and shares port 3000 through Live Share; open the forwarded `localhost:3000` to see your work. If you need a package installed, a migration run, or a column added — **ask the host**. Do not work around it.
 
-**Live Share is not version control and not a backup.** Only the host's machine holds the code. The host commits to git every hour.
+**Live Share is not version control and not a backup.** Only the host's machine holds the code. A daemon auto-commits the working tree every 5 minutes, and it refuses to stage anything credential-shaped.
 
 ---
 
@@ -47,7 +47,18 @@ STRIPE_SECRET_KEY=              # test mode
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Apply `supabase/migrations/*.sql` in order via the Supabase SQL editor, then run the seed script.
+Verify the credentials actually work before doing anything else:
+
+```bash
+npm run check:env      # calls each service, masks secrets, reports what's broken
+```
+
+It also tells you whether the migrations have run. Apply `supabase/migrations/*.sql`
+**in order** (0002 depends on 0001) via the Supabase SQL editor, then run the seed script.
+
+Note: `.env*` is gitignored, `.env.example` included — the template is not in the repo
+on purpose, because an auto-commit daemon plus a file that invites pasting keys into it
+is how secrets end up in git history. The variable list above is the source of truth.
 
 ---
 
@@ -111,6 +122,21 @@ export type KitchenCounters = {
   created_at: string;           // ISO
 };
 ```
+
+**Buyer-side counters come from a database view, not a table.** `BuyerCounters` is
+served by the `buyer_counters` view (defined in migration 0002), one row per profile,
+keyed by `user_id`. It runs with `security_invoker`, so RLS applies as the caller.
+
+```ts
+const { data } = await supabase
+  .from("buyer_counters")
+  .select("*")
+  .eq("user_id", profileId)
+  .single();          // -> BuyerCounters
+```
+
+Same rule as the kitchen counters: read the view, do not aggregate `logs` and
+`log_likes` yourself.
 
 Also defined in `lib/types.ts` and used by your components: `BuyerCounters`, `CredibilityTier`, `BuyerTier`, `ScoreComponent`, `CredibilityResult`, `BadgeDef`, `KitchenPublic`, `ProfilePublic`, `Log`, `LogWithAuthor`.
 

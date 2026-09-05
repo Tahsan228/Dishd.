@@ -57,7 +57,10 @@ They are React Server Components. Each does its own Supabase query. Do not add p
 
 Server Components by default; `"use client"` only where interactivity requires it, nested inside a server wrapper. Tailwind utilities only. `kebab-case.tsx` filenames, named exports. `cn()` from `@/lib/utils`. Money in integer cents; ratings stored 0–10, displayed 0–5 stars. Every screen must work at 390 px wide.
 
-Read counters directly off the `kitchens` row — they are trigger-maintained. Do not aggregate across `orders` and `logs` at render time.
+Read kitchen counters directly off the `kitchens` row — they are trigger-maintained.
+Buyer counters come from the `buyer_counters` **view** (one row per profile, keyed by
+`user_id`), not from `profiles`. Do not aggregate across `orders`, `logs`, or
+`log_likes` at render time; both sources exist so you don't have to.
 
 ## If you are unsure
 
