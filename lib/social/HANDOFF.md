@@ -70,3 +70,28 @@ marketplace header would also make the personal diary easier to discover.
 - Browser checks at 390px: the four kitchen tiers, empty and unrated diaries,
   buyer profile pagination, owner review saves, appreciation toggles, locked
   records, and the print dialog. Authenticated database flows require host setup.
+
+---
+
+## Picked up by Claude (host side)
+
+The two host-owned placements this file asked for are done: `OrderReviewLink`
+is on the completed-order screen, and a `/diary` link is in the shared header.
+
+Photo upload — logged here as "the next integration checkpoint" — is also done.
+The composer takes a file with `capture="environment"` so a phone opens the
+camera, uploads to `photos/reviews/<logId>.<ext>` as the buyer, and keeps the
+pasted-HTTPS-link path as the fallback. Size and MIME type are checked in
+`review-validation.ts` and again by the bucket, so a direct storage call cannot
+go around them. The `photos` bucket only existed by hand in the dashboard; it is
+now in `0007_storage_buckets.sql`.
+
+One thing found while integrating, worth knowing because it touches the social
+workstream's central claim. `0004` protected `logs` from forgery, but `orders`
+had the same hole one level up: `orders_update` carried no `WITH CHECK` and no
+transition guard, so a buyer could `PATCH` their own order to `completed` and
+have the autolog trigger mint them a verified review with no food involved —
+and add to `revenue_cents` on the Business Record. `0005` closes it with the
+same reasoning `0004` used. Nothing in `lib/social` needed to change; the
+scoring and the record were reading counters that could be inflated from
+outside.

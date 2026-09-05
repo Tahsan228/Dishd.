@@ -47,6 +47,17 @@ STRIPE_SECRET_KEY=              # test mode
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
+Optional, and **must stay unset in production**:
+
+```
+NEXT_PUBLIC_DISHD_DEMO_PASSWORD=   # shows the one-click demo account panel
+```
+
+The sign-in page used to carry the seeded password as a literal in a client
+component, which shipped it to every visitor and offered one-click sign-in as a
+Dishd Verified cook. It now comes from this variable, so a deployment that does
+not set it has no demo credentials in its bundle and no demo panel at all.
+
 Verify the credentials actually work before doing anything else:
 
 ```bash
@@ -406,6 +417,38 @@ four states — `pending`, `verified`, `mismatch`, `unreadable` — and only
 `verified` should render as a green sourcing badge. Show `pending` in amber.
 
 **Guest still to do:** everything under "What the guest builds" above.
+
+---
+
+## Before this runs for real people
+
+The app was demo-shaped in several places that mattered once a stranger could
+reach it. Those are now fixed in code, but three of the fixes are migrations
+that **have not been applied to any database** — apply `0005`, `0006` and `0007`
+in order, then re-run the seed.
+
+| Migration | Why it exists |
+|---|---|
+| `0005_protect_order_lifecycle.sql` | `orders_update` had no `WITH CHECK` and no transition guard, so a buyer could `PATCH` their own order to `completed` over the public REST API. That fires the autolog trigger, mints a review with `is_verified = true`, and adds to `orders_completed` and `revenue_cents` — defeating the one claim the product rests on, and inflating the figure on a Business Record handed to a bank. Same class of hole `0004` closed on `logs`, one level upstream. Also blocks buyer-set `payment_status` and `declined`-griefing of a cook's score. |
+| `0006_account_signup.sql` | There was no sign-up at all, and no trigger behind `profiles` — an account made through `signUp()` would land in `auth.users` with no profile row and be signed in but invisible. A `SECURITY DEFINER` trigger on `auth.users` now builds the profile, settles handle collisions, and backfills. |
+| `0007_storage_buckets.sql` | The `photos` and `receipts` buckets were created by hand in the dashboard, so a fresh project had neither and both uploads failed. |
+
+Still genuinely missing, and each is a real gap rather than polish:
+
+- **Card checkout.** Nothing creates a Stripe session or handles a webhook.
+  Card is switched off at the source (`lib/market/payments.ts`) rather than
+  left looking available, because taking a card order that never charges is
+  worse than not offering one. Cash at pickup works end to end. Implement
+  checkout plus the webhook that moves `payment_status` to `paid`, then flip
+  `CARD_CHECKOUT_IMPLEMENTED`.
+- **Password reset.** There is no "forgot password" flow, so a real user who
+  forgets one is locked out permanently.
+- **Email deliverability.** Sign-up assumes Supabase's built-in mailer; a real
+  deployment needs its own SMTP or confirmations will not arrive reliably.
+- **Reviewer queue.** Receipts sit at `pending` until a human confirms them,
+  and there is no screen for that human yet.
+- **Legal review.** `app/legal/` describes the software honestly but has not
+  been seen by a lawyer.
 
 Seeded fixtures to develop against will be `/k/aminas-kitchen` (a `trusted_kitchen`) plus one kitchen at each other tier, and `/u/yusuf`. The host will confirm the exact slugs once the seed lands.
 mr collllllddddd booooiiii
