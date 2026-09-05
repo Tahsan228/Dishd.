@@ -29,7 +29,10 @@ if (!filled(URL_) || !filled(ANON)) {
     "Supabase dashboard -> Project Settings -> API Keys");
 } else if (!URL_.startsWith("https://")) {
   record("Supabase URL", false, `looks wrong: ${URL_}`,
-    "Should look like https://abcdefgh.supabase.co — no trailing slash");
+    "Should look like https://abcdefgh.supabase.co");
+} else if (/\/(rest|auth|storage|realtime)\/v1\/?$/.test(URL_) || URL_.endsWith("/")) {
+  record("Supabase URL", false, `has a path appended: ${URL_}`,
+    "Use the bare project URL, e.g. https://abcdefgh.supabase.co — drop /rest/v1 and any trailing slash");
 } else {
   try {
     const r = await fetch(`${URL_}/rest/v1/known_halal_stores?select=id&limit=1`, {
