@@ -43,8 +43,8 @@ export default async function KitchenPage({
     <>
       <SiteHeader />
 
-      <main className="mx-auto w-full max-w-5xl px-4 pb-20">
-        <div className="fade mt-4 aspect-[21/9] w-full overflow-hidden rounded-2xl bg-surface-sunk">
+      <main className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6">
+        <div className="fade mt-4 aspect-[16/9] w-full overflow-hidden rounded-2xl bg-surface-sunk sm:aspect-[21/8] lg:aspect-[3/1]">
           {kitchen.hero_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -71,7 +71,7 @@ export default async function KitchenPage({
 
         <div className="rise mt-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl leading-tight text-forest sm:text-4xl">
+            <h1 className="font-display text-[2rem] leading-[1.05] text-forest sm:text-5xl">
               {kitchen.name}
             </h1>
             <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
@@ -106,14 +106,14 @@ export default async function KitchenPage({
           </span>
         </p>
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
           <div className="order-2 lg:order-1">
-            <h2 className="font-display text-2xl text-forest">On the menu</h2>
+            <h2 className="font-display text-2xl text-forest sm:text-3xl">On the menu</h2>
             <div className="mt-4">
               <MenuGrid kitchenId={kitchen.id} />
             </div>
 
-            <h2 className="mt-10 font-display text-2xl text-forest">Reviews</h2>
+            <h2 className="mt-12 font-display text-2xl text-forest sm:text-3xl">Reviews</h2>
             <div className="mt-4">
               <ReviewFeed kitchenId={kitchen.id} />
             </div>

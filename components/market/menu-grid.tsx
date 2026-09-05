@@ -96,7 +96,7 @@ export async function MenuGrid({ kitchenId }: { kitchenId: string }) {
   }
 
   return (
-    <div className="stagger grid gap-4 sm:grid-cols-2">
+    <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {items.map((item) => (
         <article
           key={item.id}
