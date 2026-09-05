@@ -27,7 +27,7 @@ export default async function LogPage({ params }: { params: Promise<{ id: string
     <div><p className="text-xs font-semibold uppercase tracking-widest text-brass-ink">The meal diary</p><h1 className="mt-2 font-display text-3xl sm:text-4xl">{log.kitchen ? `A meal from ${log.kitchen.name}` : "A meal to remember"}</h1></div>
     <ReviewCard review={log} />
     {!likes.error && !liked?.error ? <ReviewAppreciation logId={id} initialCount={likes.count ?? 0} initialLiked={!!liked?.data} signedIn={!!user} /> : <p className="text-sm text-ink-muted">Appreciations are temporarily unavailable.</p>}
-    {ownReview && log.is_verified && log.order_id && <ReviewComposer log={log} />}
+    {ownReview && log.is_verified && log.order_id && <ReviewComposer log={log} kitchen={log.kitchen} />}
     {ownReview && !log.is_verified && <SocialNotice title="A note about this entry">This entry has no verified pickup. Completed orders create a verified entry automatically.</SocialNotice>}
     {log.author && <Link href={`/u/${encodeURIComponent(log.author.handle)}`} className="inline-flex min-h-11 items-center text-sm font-medium text-forest underline underline-offset-4">More from {log.author.display_name}’s diary</Link>}
   </main>;

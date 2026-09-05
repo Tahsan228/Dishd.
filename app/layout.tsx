@@ -1,21 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Instrument_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-// Instrument Serif matches the wordmark's high-contrast editorial cut far more
-// closely than a variable workhorse serif does, and Instrument Sans is its
-// designed companion — so the pairing reads as one voice rather than two fonts
-// picked independently.
-const display = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
+const display = localFont({
+  src: "../public/fonts/fraunces.woff2",
   variable: "--font-display-face",
   display: "swap",
 });
 
-const sans = Instrument_Sans({
-  subsets: ["latin"],
+const sans = localFont({
+  src: "../public/fonts/dm-sans.woff2",
   variable: "--font-sans-face",
   display: "swap",
 });

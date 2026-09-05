@@ -33,7 +33,7 @@ export async function SiteHeader() {
             width={911}
             height={216}
             priority
-            className="h-8 w-auto sm:h-9"
+            className="h-6 w-auto sm:h-7"
           />
         </Link>
 

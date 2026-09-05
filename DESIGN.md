@@ -4,6 +4,8 @@ Keep the same identity throughout the app: warm cream ground, deep forest green 
 
 The user wants a cleaner, more readable version of this theme. The top-left logo should be compact. Use generous section spacing and card padding, comfortable line height, and normal UI letter spacing. Reserve the display face for page and major section headings; small card titles, form labels, and navigation should use the readable sans face. Avoid tiny body text and crowded navigation.
 
+Fonts are now local **Fraunces** for display and **DM Sans** for interface/body text, loaded from public/fonts in app/layout.tsx. Keep body line-height 1.65, display line-height 1.2, normal UI letter spacing, and a 24px mobile / 28px desktop header logo. Both font licenses are included beside the files. Do not bring back the tighter Instrument font pairing.
+
 Food discovery should be easy to scan; community should feel like a personal food diary with rich review cards, visible authors, clear ratings, and connected kitchen links. Rewards use brass to represent something earned. Keep moderation states and demo labels explicit.
 
 Motion should support hierarchy: subtle entrance, gentle card lift, clear button feedback. Honor prefers-reduced-motion. All screens must fit 390px with readable controls and no horizontal page overflow.

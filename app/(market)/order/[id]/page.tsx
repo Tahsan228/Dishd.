@@ -6,6 +6,7 @@ import { settleFromCheckout } from "@/lib/market/payment-settlement";
 import { SiteHeader } from "@/components/market/site-header";
 import { OrderReviewLink } from "@/components/social/order-review-link";
 import { ClearCartOnOrder } from "@/components/market/clear-cart-on-order";
+import { OrderLiveRefresh } from "@/components/market/order-live-refresh";
 import { formatCents } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/types";
 
@@ -68,6 +69,7 @@ export default async function OrderPage({
   return (
     <>
       <SiteHeader />
+      <OrderLiveRefresh active={!cancelled && order.status !== "completed"} />
       <ClearCartOnOrder orderId={order.id} kitchenId={order.kitchen_id} />
       <main className="mx-auto w-full max-w-2xl px-4 pb-20 pt-8">
         <p className="text-sm text-ink-muted">

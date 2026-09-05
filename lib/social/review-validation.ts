@@ -12,12 +12,16 @@ export const reviewSchema = z.object({
   rating: z.string().regex(/^(?:[0-9]|10)$/, "Choose a rating from 0 to 5 stars."),
   body: z.string().trim().max(3000, "Keep your review to 3,000 characters."),
   photo: photoLink,
+  flavor: z.string().regex(/^(?:[0-9]|10)?$/, "Choose a food rating from 0 to 5.").optional(),
+  value: z.string().regex(/^(?:[0-9]|10)?$/, "Choose a value rating from 0 to 5.").optional(),
+  quality: z.string().regex(/^(?:[0-9]|10)?$/, "Choose a packaging rating from 0 to 5.").optional(),
   sourcing: z.enum(["yes", "no", "unsure"], { error: "Please answer the sourcing question; “Not sure” is fine." }),
 });
 
 export type ReviewActionState = {
   ok: boolean;
   message: string;
+  photos?: string[];
   errors?: Partial<Record<"rating" | "body" | "photo" | "sourcing", string>>;
 };
 

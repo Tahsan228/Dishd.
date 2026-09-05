@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Dishd design tokens.  FROZEN — do not edit without telling the other dev.
+   Dishd design tokens. Shared design contract: see DESIGN.md.
    Tailwind v4 @theme: every token below becomes a utility automatically,
    e.g. --color-forest  ->  bg-forest / text-forest / border-forest
    ========================================================================== */
@@ -49,10 +49,15 @@ h1, h2, h3, .font-display {
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: -0.01em;
-  line-height: 1.08;
+  line-height: 1.2;
 }
 
-body { letter-spacing: -0.006em; }
+body { letter-spacing: 0; line-height: 1.65; }
+h3:not(.font-display) { font-family: var(--font-sans); font-weight: 600; line-height: 1.45; letter-spacing: 0; }
+p { text-wrap: pretty; }
+button, input, select, textarea { font-family: var(--font-sans); }
+:focus-visible { outline: 2px solid var(--color-forest); outline-offset: 3px; }
+main { animation: rise .35s ease both; }
 
 /* Scores and stats must not jitter as digits change. */
 .tabular { font-variant-numeric: tabular-nums; }
