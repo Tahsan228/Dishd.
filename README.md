@@ -24,14 +24,19 @@ npm test
 npm run build
 ```
 
+Production builds use `.next-build/`; development uses `.next/`. Building does not overwrite the running preview. `npm start` serves the production build on port 4173 after the development server is stopped.
+
+Photo provenance and bundled font licenses are documented in [ASSETS.md](ASSETS.md).
+
 ## Build in parts
 
 1. **Discovery and visual foundation** — responsive homepage, food photography, cuisine/search filters, sorting, saved kitchens, kitchen preview, and a community feed.
-2. **Kitchen and meal pages** — full menus, sourcing evidence, kitchen story, pickup availability.
-3. **Order flow** — basket, pickup selection, order status, and clearly simulated demo checkout.
-4. **Meal diaries and credibility** — ratings, reviews, verified pickup linkage, badges, buyer profiles, and transparent kitchen scoring.
-5. **Cook tools and Business Record** — menus, sourcing submissions, order management, printable trading history.
-6. **Live services** — real authentication, database/RLS, storage, order lifecycle and payments, without breaking the demo preview.
+2. **Login, home, and profile pages** — login leads to a separate signed-in home page, with a profile summary and “View full profile” button above the Uber Eats-style marketplace. Full profile has its own page.
+3. **Kitchen and meal pages** — dedicated URLs, full menus, sourcing evidence, kitchen story, pickup availability.
+4. **Checkout and customer orders** — connected basket, pickup selection, totals, checkout, order list, and individual order-status pages, with state retained across refresh.
+5. **Cook management** — dedicated dashboard, editable menus/availability, and incoming order handling connected to the customer's order lifecycle.
+6. **Meal diaries and credibility** — ratings, reviews, verified pickup linkage, badges, profile history, transparent kitchen scoring, and printable Business Record.
+7. **Live services** — real authentication, database/RLS, storage, order lifecycle and payments, without breaking the demo preview. Simulated services remain explicitly labelled until connected.
 
 Each part ends with a commit and a short checklist for the user to test. Current status and exact next steps live in **[HANDOFF.md](HANDOFF.md)**.
 
