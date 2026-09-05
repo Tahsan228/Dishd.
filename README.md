@@ -338,3 +338,4 @@ Every screen must work at **390 px wide**, one-handed. This is a phone app that 
 **Guest still to do:** everything under "What the guest builds" above.
 
 Seeded fixtures to develop against will be `/k/aminas-kitchen` (a `trusted_kitchen`) plus one kitchen at each other tier, and `/u/yusuf`. The host will confirm the exact slugs once the seed lands.
+mr collllllddddd booooiiii
