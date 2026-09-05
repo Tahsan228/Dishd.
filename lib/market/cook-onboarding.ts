@@ -1,0 +1,136 @@
+import { z } from "zod";
+
+/**
+ * Validation for cook onboarding, kept out of the "use server" module so both
+ * the form and the action can import it — a server-action file may only export
+ * async functions.
+ */
+
+export type CookActionState = {
+  ok: boolean;
+  message: string;
+  errors?: Record<string, string>;
+};
+
+export const MEAT_TYPES = ["beef", "lamb", "chicken", "goat", "other"] as const;
+
+export const ALLERGENS = [
+  "gluten",
+  "dairy",
+  "tree_nuts",
+  "peanuts",
+  "sesame",
+  "mustard",
+  "egg",
+  "soy",
+  "fish",
+  "shellfish",
+] as const;
+
+/** Where Dishd currently has a cottage-food framework it understands. */
+export const COUNTIES: { county: string; stateCode: string }[] = [
+  { county: "Alameda", stateCode: "CA" },
+  { county: "Santa Clara", stateCode: "CA" },
+  { county: "San Mateo", stateCode: "CA" },
+  { county: "Contra Costa", stateCode: "CA" },
+];
+
+export const kitchenSchema = z.object({
+  name: z.string().trim().min(2, "Give your kitchen a name.").max(80, "Keep the name under 80 characters."),
+  bio: z.string().trim().max(600, "Keep it under 600 characters.").optional().default(""),
+  cuisineTags: z
+    .string()
+    .trim()
+    .transform((v) =>
+      v
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean)
+        .slice(0, 6),
+    ),
+  line1: z.string().trim().min(3, "Enter your street address.").max(120),
+  line2: z.string().trim().max(80).optional().default(""),
+  city: z.string().trim().min(2, "Enter your city.").max(60),
+  zip: z.string().trim().regex(/^\d{5}(-\d{4})?$/, "Enter a 5-digit ZIP."),
+  county: z.string().trim().min(2, "Choose your county."),
+  stateCode: z.string().trim().length(2, "Two-letter state code."),
+});
+
+export const permitSchema = z.object({
+  permitNo: z
+    .string()
+    .trim()
+    .min(4, "Enter the permit number from your county.")
+    .max(40, "That looks too long for a permit number."),
+});
+
+export const addSourceSchema = z.object({
+  storeName: z.string().trim().min(2, "Enter the shop's name.").max(80),
+  storeAddress: z.string().trim().max(160).optional().default(""),
+  certBody: z.string().trim().max(60).optional().default(""),
+});
+
+export const menuItemSchema = z.object({
+  name: z.string().trim().min(2, "Name the dish.").max(80),
+  description: z.string().trim().max(400, "Keep it under 400 characters.").optional().default(""),
+  price: z.coerce
+    .number({ error: "Enter a price." })
+    .positive("A dish has to cost something.")
+    .max(500, "That seems too high for one dish."),
+  containsMeat: z.boolean(),
+  meatType: z.enum(["beef", "lamb", "chicken", "goat", "other", "none"]),
+  allergens: z.array(z.string()).max(12),
+  batchId: z.string().trim().optional().default(""),
+});
+
+/**
+ * The six steps, in the order the rules require them.
+ *
+ * Sequence is not decoration: a meat dish cannot exist without a receipt behind
+ * it (the database refuses), and a kitchen should not take orders before it has
+ * claimed a permit.
+ */
+export const ONBOARDING_STEPS = [
+  { key: "kitchen", title: "Your kitchen", blurb: "Name, cuisine, and the address you cook from." },
+  { key: "permit", title: "MEHKO permit", blurb: "The county permit that makes home cooking legal." },
+  { key: "sources", title: "Halal suppliers", blurb: "Where you buy meat. Receipts are matched to these." },
+  { key: "receipt", title: "Sourcing receipt", blurb: "Proof of purchase for the meat you cook with." },
+  { key: "menu", title: "Your menu", blurb: "The dishes you sell, and what is in them." },
+  { key: "live", title: "Open for orders", blurb: "Publish your kitchen." },
+] as const;
+
+export type OnboardingStepKey = (typeof ONBOARDING_STEPS)[number]["key"];
+
+export type OnboardingProgress = {
+  hasKitchen: boolean;
+  hasPermit: boolean;
+  hasSource: boolean;
+  hasBatch: boolean;
+  hasMenuItem: boolean;
+  isLive: boolean;
+};
+
+/** The first step still outstanding, which is the one to show. */
+export function currentStep(p: OnboardingProgress): OnboardingStepKey {
+  if (!p.hasKitchen) return "kitchen";
+  if (!p.hasPermit) return "permit";
+  if (!p.hasSource) return "sources";
+  if (!p.hasBatch) return "receipt";
+  if (!p.hasMenuItem) return "menu";
+  return "live";
+}
+
+export function stepIsDone(p: OnboardingProgress, key: OnboardingStepKey): boolean {
+  switch (key) {
+    case "kitchen": return p.hasKitchen;
+    case "permit": return p.hasPermit;
+    case "sources": return p.hasSource;
+    case "receipt": return p.hasBatch;
+    case "menu": return p.hasMenuItem;
+    case "live": return p.isLive;
+  }
+}
+
+export function completedCount(p: OnboardingProgress): number {
+  return ONBOARDING_STEPS.filter((s) => stepIsDone(p, s.key)).length;
+}
