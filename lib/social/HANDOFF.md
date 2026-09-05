@@ -37,6 +37,13 @@ migrations, and dependency manifests are unchanged.
 
 ## Validation
 
+- Completed locally using VS Code's bundled runtime/compiler: syntax checks for
+  all 28 TypeScript files, a strict typecheck of scoring/badges/pagination, and
+  all 30 scoring/badge fixtures executed through Node assertions. This fixture
+  run used a standalone harness, not the Vitest runner.
+- Full Vitest, lint, application typechecking, and browser checks remain for the
+  host. This machine has no standalone Node/npm or installed project dependencies;
+  none were installed or changed. No host process or dev server was touched.
 - `lib/social/credibility.test.ts`: formula arithmetic, every tier boundary,
   penalties, zero-floor reconciliation, tenure, decimal ratings, all badge rules.
 - `lib/social/review-validation.test.ts`: rating bounds, explicit sourcing answer,
