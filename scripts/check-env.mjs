@@ -77,8 +77,8 @@ if (!filled(SERVICE)) {
 
 /* --------------------------------------------------------------- Anthropic */
 if (!filled(ANTHROPIC)) {
-  record("Anthropic API key", false, "not set — receipt verification will not work",
-    "console.anthropic.com -> API keys");
+  // Optional: receipts are reviewed by a human, so nothing needs this key.
+  record("Anthropic API key", true, "not set (optional — receipts are manually reviewed)");
 } else {
   try {
     const r = await fetch("https://api.anthropic.com/v1/models?limit=1", {

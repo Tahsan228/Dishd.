@@ -115,6 +115,7 @@ export type KitchenCounters = {
   distinct_customers: number;
   repeat_customers: number;
   trust_streak: number;         // consecutive verified sourcing batches
+                                // (batches awaiting review are skipped, not counted as failures)
   permit_status: "none" | "claimed" | "verified";
   upheld_flags: number;
   open_incidents: number;
@@ -359,7 +360,17 @@ Every screen must work at **390 px wide**, one-handed. This is a phone app that 
 
 **Done:** Next.js 16 + React 19 + Tailwind v4 scaffold · all dependencies installed · design tokens in `globals.css` · `lib/types.ts` and `lib/utils.ts` · core schema in `supabase/migrations/0001_init.sql`.
 
-**Host still to do:** RLS policies and counter triggers · Supabase clients · `app/layout.tsx` with fonts · seed data · cook onboarding · Chain of Trust receipt pipeline · menu CRUD · discovery map · cart, checkout and order lifecycle · legal pages · PWA manifest.
+**Host done since:** RLS policies and counter triggers · Supabase clients · `app/layout.tsx` with fonts · storage buckets · `npm run check:env` · Chain of Trust receipt checks (`lib/market/receipts.ts`, 10 passing tests) and submission action.
+
+**Host still to do:** seed data · cook onboarding · receipt upload UI and reviewer queue · menu CRUD · discovery map · cart, checkout and order lifecycle · legal pages · PWA manifest.
+
+**Receipts are reviewed by a human, not by AI.** The cook declares what is on the
+receipt and uploads it as evidence. Deterministic checks (duplicate image,
+duplicate store/date/total across all kitchens, registered-source match,
+freshness) run instantly and reject on the spot; everything that passes sits at
+`match_status = 'pending'` until a reviewer confirms the image. So a batch has
+four states — `pending`, `verified`, `mismatch`, `unreadable` — and only
+`verified` should render as a green sourcing badge. Show `pending` in amber.
 
 **Guest still to do:** everything under "What the guest builds" above.
 
