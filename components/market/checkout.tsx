@@ -22,9 +22,10 @@ import { cn } from "@/lib/utils";
  * error. Clearing happens on the order page instead.
  */
 export function Checkout({
-  cardUnavailableReason,
+  cardUnavailableReason, rewards = [],
 }: {
   cardUnavailableReason: string | null;
+  rewards?: {id:string;credit_cents:number;minimum_order_cents:number}[];
 }) {
   const { cart, ready, subtotal, setQty } = useCart();
   const [state, action, pending] = useActionState<PlaceOrderState, FormData>(placeOrder, null);
@@ -36,6 +37,8 @@ export function Checkout({
     acks: Record<string, boolean>;
   }>({ kitchenId: "", acks: {} });
 
+  const [rewardId,setRewardId]=useState('');
+  const reward=rewards.find(r=>r.id===rewardId && subtotal>=r.minimum_order_cents);
   const acks = ackState.kitchenId === cart?.kitchenId ? ackState.acks : {};
   const setAcks = (next: Record<string, boolean>) =>
     setAckState({ kitchenId: cart?.kitchenId ?? "", acks: next });
@@ -64,6 +67,7 @@ export function Checkout({
   return (
     <form action={action} className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
       <input type="hidden" name="kitchenId" value={cart.kitchenId} />
+      <input type="hidden" name="rewardId" value={reward?.id??""} />
       <input type="hidden" name="slug" value={cart.kitchenSlug} />
       {cart.lines.map((line) => (
         <input key={line.itemId} type="hidden" name={`qty_${line.itemId}`} value={line.qty} />
@@ -116,12 +120,12 @@ export function Checkout({
           ))}
         </ul>
 
-        <fieldset className="mt-6 space-y-2 rounded-xl bg-surface-sunk p-4">
+        <fieldset className="mt-8 space-y-4 rounded-2xl bg-surface-sunk p-6">
           <legend className="px-1 text-xs font-medium text-ink">Before you order</legend>
           {ACKNOWLEDGMENTS.map((a) => (
             <label
               key={a.key}
-              className="flex cursor-pointer gap-2.5 text-xs leading-relaxed text-ink-muted"
+              className="flex cursor-pointer gap-3 text-sm leading-relaxed text-ink-muted"
             >
               <input
                 type="checkbox"
@@ -135,7 +139,7 @@ export function Checkout({
           ))}
           <p className="px-1 pt-1 text-[11px] text-ink-muted">
             Each acceptance is recorded separately. Read the{" "}
-            <Link href="/legal/terms" className="underline underline-offset-2">terms</Link>.
+            <Link href="/legal/standards" className="underline underline-offset-2">food-quality standards</Link>.
           </p>
         </fieldset>
       </div>
@@ -180,10 +184,19 @@ export function Checkout({
             )}
           </fieldset>
 
+          <div className="mt-6">
+            <label htmlFor="reward-credit" className="text-sm font-medium">Use a reward credit</label>
+            <select id="reward-credit" value={reward?.id??''} onChange={e=>setRewardId(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-cream p-3 text-sm">
+              <option value="">Save my credits for later</option>
+              {rewards.map(r=><option key={r.id} value={r.id} disabled={subtotal<r.minimum_order_cents}>{formatCents(r.credit_cents)} credit ? {formatCents(r.minimum_order_cents)} minimum</option>)}
+            </select>
+            <Link href="/rewards" className="mt-2 inline-block text-sm text-forest underline">Earn and redeem points</Link>
+            {reward && <p className="mt-3 text-sm text-forest">Reward applied: ?{formatCents(reward.credit_cents)}</p>}
+          </div>
           <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
             <span className="text-sm text-ink-muted">Total</span>
             <span className="tabular font-display text-2xl text-forest">
-              {formatCents(subtotal)}
+              {formatCents(subtotal-(reward?.credit_cents??0))}
             </span>
           </div>
 

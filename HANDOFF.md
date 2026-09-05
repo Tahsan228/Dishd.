@@ -31,3 +31,5 @@ Complete the order-to-review recovery path and advanced review composer, then re
 ## Workflow
 
 Active agent owns the whole app; old guest/frozen-directory restrictions are retired. Main is the shared continuation branch. Commit/push about every ten minutes while active. Use DESIGN.md for the design contract.
+
+Third checkpoint: migrations 0009 and 0010 add the private reward ledger, review/pickup/purchase awards, moderated promotion claims, community posts and reporting, single-use credits, and transactional checkout. Checkout calls a service-only RPC after authenticating the buyer; direct client order/item inserts are now prohibited. Credit discounts reduce the actual cash/Stripe total and return on cancellation. Consent version 2026-09-05.2 requires quality/allergen/halal standards. Apply 0008-0010 together before using these changes. Isolated PostgreSQL test: npm run test:db, 26 checks pass; no live database was touched. Interfaces for community, rewards and moderation are the next checkpoint.

@@ -9,7 +9,9 @@
     "lint": "eslint",
     "check:env": "node --env-file-if-exists=.env.local scripts/check-env.mjs",
     "seed": "node --env-file-if-exists=.env.local scripts/seed.mjs",
-    "verify": "node --env-file-if-exists=.env.local scripts/verify-flow.mjs"
+    "verify": "node --env-file-if-exists=.env.local scripts/verify-flow.mjs",
+    "test:db": "node scripts/test-database.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
@@ -27,6 +29,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.13.3",
     "@types/react": "^19",

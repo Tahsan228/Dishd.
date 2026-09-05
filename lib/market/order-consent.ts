@@ -1,26 +1,7 @@
-/**
- * Order-time consent wording.
- *
- * Plain module, not a server action file: "use server" modules may only export
- * async functions, and both the client form and the server action need these.
- *
- * Bump ACK_VERSION whenever any wording below changes. Every acceptance is
- * recorded against the version in force at the time, which is what makes the
- * agreements table usable as evidence.
- */
-export const ACK_VERSION = "2026-09-05.1";
-
+/** Versioned acknowledgments are recorded atomically with each order. */
+export const ACK_VERSION = '2026-09-05.2';
 export const ACKNOWLEDGMENTS = [
-  {
-    key: "home_kitchen",
-    text: "I understand this food is prepared in a private home kitchen that is not routinely inspected by a health department.",
-  },
-  {
-    key: "allergens",
-    text: "I have read the allergen information and accept the risk of cross-contamination in a home kitchen.",
-  },
-  {
-    key: "halal",
-    text: "I understand Dishd does not certify halal status; sourcing claims are made by the cook.",
-  },
+ {key:'quality',text:'I have read the food-quality standards. My order must be fresh, safely handled, accurately described and securely packaged. I can report any failure; accepting this does not waive those standards.'},
+ {key:'allergens',text:'I have checked the ingredients and allergens and will ask the kitchen about my dietary needs before ordering. The kitchen must disclose allergens and cross-contact risks and get my agreement before substitutions.'},
+ {key:'halal',text:'I have checked the kitchen?s sourcing evidence. The kitchen must follow Dishd?s halal standards, including no pork or alcohol ingredients and verified meat sourcing. Dishd is not a halal certifier; suspected violations can be reported for investigation.'}
 ] as const;
