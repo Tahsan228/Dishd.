@@ -50,8 +50,20 @@ const { data: item } = await admin
 console.log(`\nVerifying against ${kitchen.name} / ${item.name}\n`);
 
 const buyer = await asUser("tariq@dishd.test");
-const other = await asUser("mariam@dishd.test");
 const cook = await asUser("amina@dishd.test");
+
+// A genuinely unrelated user. Seeded buyers all have completed orders at every
+// kitchen, so they can legitimately see addresses — using one here would test
+// nothing. This account is created fresh and deleted at the end.
+const strangerEmail = `stranger-${Date.now()}@dishd.test`;
+const { data: madeStranger } = await admin.auth.admin.createUser({
+  email: strangerEmail, password: PW, email_confirm: true,
+});
+await admin.from("profiles").insert({
+  id: madeStranger.user.id, handle: `stranger${Date.now()}`,
+  display_name: "Unrelated User", city: "Fremont, CA",
+});
+const other = await asUser(strangerEmail);
 
 const { data: buyerUser } = await buyer.auth.getUser();
 const buyerId = buyerUser.user.id;
@@ -106,7 +118,8 @@ check("address revealed to the buyer after acceptance",
 
 const otherRead = await other.from("kitchen_addresses").select("line1").eq("kitchen_id", kitchen.id);
 check("address STILL hidden from an unrelated signed-in user",
-  (otherRead.data ?? []).length === 0, `${(otherRead.data ?? []).length} rows`);
+  (otherRead.data ?? []).length === 0,
+  (otherRead.data ?? []).length ? "LEAKED" : "0 rows");
 
 /* 4 ------------------------------------------------- complete -> auto-log */
 const before2 = await admin.from("kitchens")
@@ -141,6 +154,7 @@ check("a user cannot write a log as somebody else", Boolean(forgeErr),
 
 /* cleanup */
 await admin.from("orders").delete().eq("id", order.id);
+await admin.auth.admin.deleteUser(madeStranger.user.id);
 
 console.log(
   failures === 0
