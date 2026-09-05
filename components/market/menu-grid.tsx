@@ -1,5 +1,6 @@
 import { ShieldCheck, Clock, TriangleAlert, Info } from "lucide-react";
-import { getKitchenMenu } from "@/lib/market/kitchens";
+import { getKitchenMenu, type MenuItemWithProvenance } from "@/lib/market/kitchens";
+import { AddToCart } from "@/components/market/add-to-cart";
 import { formatCents } from "@/lib/utils";
 
 const ALLERGEN_LABEL: Record<string, string> = {
@@ -84,8 +85,22 @@ function Provenance({
   );
 }
 
-export async function MenuGrid({ kitchenId }: { kitchenId: string }) {
-  const items = await getKitchenMenu(kitchenId);
+/**
+ * A dish is orderable when it is available and, if it contains meat, backed by
+ * a receipt that has cleared review. Same rule the kitchen page applies before
+ * offering the order panel, and `placeOrder` re-checks it server-side.
+ */
+function orderable(item: MenuItemWithProvenance): boolean {
+  if (!item.is_available) return false;
+  return !item.contains_meat || item.sourcing_batches?.match_status === "verified";
+}
+
+export async function MenuGrid({
+  kitchen,
+}: {
+  kitchen: { id: string; name: string; slug: string };
+}) {
+  const items = await getKitchenMenu(kitchen.id);
 
   if (items.length === 0) {
     return (
@@ -133,12 +148,20 @@ export async function MenuGrid({ kitchenId }: { kitchenId: string }) {
               <Provenance batch={item.sourcing_batches} />
             )}
 
-            <a
-              href="#order"
-              className="mt-4 block w-full rounded-full border border-forest/25 px-4 py-2.5 text-center text-sm font-medium text-forest hover:bg-forest-soft"
-            >
-              Add to order
-            </a>
+            {/* Pushed to the bottom so cards with different amounts of
+                provenance still line their buttons up. */}
+            <div className="mt-auto">
+              <AddToCart
+                kitchen={kitchen}
+                item={{ id: item.id, name: item.name, priceCents: item.price_cents }}
+                disabled={!orderable(item)}
+                disabledReason={
+                  !item.is_available
+                    ? "Sold out for today."
+                    : "Awaiting receipt review — this dish cannot be ordered yet."
+                }
+              />
+            </div>
           </div>
         </article>
       ))}

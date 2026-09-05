@@ -7,6 +7,8 @@ import {
 } from "@/lib/market/kitchens";
 import { KitchenCard } from "@/components/market/kitchen-card";
 import { SiteHeader } from "@/components/market/site-header";
+import { BuyerHome } from "@/components/market/buyer-home";
+import { currentProfile } from "@/lib/market/auth-actions";
 import { toStars } from "@/lib/utils";
 
 function timeAgo(iso: string) {
@@ -19,11 +21,16 @@ function timeAgo(iso: string) {
 }
 
 export default async function DiscoveryPage() {
-  const [kitchens, stats, activity] = await Promise.all([
+  const [kitchens, stats, activity, profile] = await Promise.all([
     listActiveKitchens(),
     getPlatformStats(),
     getRecentActivity(6),
+    currentProfile(),
   ]);
+
+  // Someone signed in has already been sold the idea; they came here to order.
+  // The pitch below is for a first visit.
+  if (profile) return <BuyerHome profile={profile} kitchens={kitchens} />;
 
   return (
     <>

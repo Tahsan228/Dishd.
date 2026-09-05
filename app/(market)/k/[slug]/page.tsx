@@ -2,10 +2,9 @@ import { notFound } from "next/navigation";
 import { MapPin, BadgeCheck, Home, Ban } from "lucide-react";
 import { getKitchenBySlug, getKitchenMenu } from "@/lib/market/kitchens";
 import { currentProfile } from "@/lib/market/auth-actions";
-import { OrderPanel } from "@/components/market/order-panel";
 import { MenuGrid } from "@/components/market/menu-grid";
 import { SiteHeader } from "@/components/market/site-header";
-import { cardAvailability } from "@/lib/market/payments";
+import { KitchenCartSummary } from "@/components/market/kitchen-cart-summary";
 
 // Guest workstream (Codex) owns these three. They are stubs until then.
 // This file composes them and does not change.
@@ -29,16 +28,13 @@ export default async function KitchenPage({
   ]);
 
   // Only dishes that are actually orderable: available, and if they contain
-  // meat, backed by a receipt that has cleared review.
-  const orderable = menu
-    .filter((m) => m.is_available)
-    .filter((m) => !m.contains_meat || m.sourcing_batches?.match_status === "verified")
-    .map((m) => ({
-      id: m.id,
-      name: m.name,
-      price_cents: m.price_cents,
-      contains_meat: m.contains_meat,
-    }));
+  // meat, backed by a receipt that has cleared review. The cart panel is
+  // pointless if nothing on the menu can be bought.
+  const orderableCount = menu.filter(
+    (m) =>
+      m.is_available &&
+      (!m.contains_meat || m.sourcing_batches?.match_status === "verified"),
+  ).length;
 
   return (
     <>
@@ -111,7 +107,7 @@ export default async function KitchenPage({
           <div className="order-2 lg:order-1">
             <h2 className="font-display text-2xl text-forest sm:text-3xl">On the menu</h2>
             <div className="mt-4">
-              <MenuGrid kitchenId={kitchen.id} />
+              <MenuGrid kitchen={{ id: kitchen.id, name: kitchen.name, slug: kitchen.slug }} />
             </div>
 
             <h2 className="mt-12 font-display text-2xl text-forest sm:text-3xl">Reviews</h2>
@@ -123,12 +119,10 @@ export default async function KitchenPage({
           <aside className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-20 lg:self-start">
             <KitchenCredibilityPanel kitchenId={kitchen.id} />
             <KitchenBadgeShelf kitchenId={kitchen.id} />
-            {!banned && orderable.length > 0 && (
-              <OrderPanel
+            {!banned && orderableCount > 0 && (
+              <KitchenCartSummary
                 kitchenId={kitchen.id}
                 slug={kitchen.slug}
-                items={orderable}
-                cardUnavailableReason={cardAvailability(kitchen).reason}
                 signedIn={Boolean(profile)}
               />
             )}

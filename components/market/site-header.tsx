@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { currentProfile, signOut } from "@/lib/market/auth-actions";
 import { createServerClient } from "@/lib/supabase/server";
+import { CartButton } from "@/components/market/cart-button";
 
 export async function SiteHeader() {
   const profile = await currentProfile();
@@ -37,6 +38,7 @@ export async function SiteHeader() {
         </Link>
 
         <nav className="flex items-center gap-2 text-sm">
+          <CartButton />
           {profile ? (
             <>
               <span className="hidden text-ink-muted md:inline">{profile.display_name}</span>

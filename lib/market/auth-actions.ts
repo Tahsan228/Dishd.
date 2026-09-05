@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
+import type { ProfilePublic } from "@/lib/types";
 import {
   normaliseHandle,
   signUpSchema,
@@ -110,10 +111,10 @@ export async function currentProfile() {
     if (!user) return null;
     const { data } = await supabase
       .from("profiles")
-      .select("id, handle, display_name, avatar_url, city")
+      .select("id, handle, display_name, avatar_url, bio, city, created_at")
       .eq("id", user.id)
       .maybeSingle();
-    return data ?? null;
+    return (data as ProfilePublic | null) ?? null;
   } catch {
     return null;
   }

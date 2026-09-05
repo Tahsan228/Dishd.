@@ -4,6 +4,7 @@ import { MapPin, Clock, CheckCircle2, ChefHat, Lock } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/market/site-header";
 import { OrderReviewLink } from "@/components/social/order-review-link";
+import { ClearCartOnOrder } from "@/components/market/clear-cart-on-order";
 import { formatCents } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/types";
 
@@ -52,6 +53,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   return (
     <>
       <SiteHeader />
+      <ClearCartOnOrder orderId={order.id} kitchenId={order.kitchen_id} />
       <main className="mx-auto w-full max-w-2xl px-4 pb-20 pt-8">
         <p className="text-sm text-ink-muted">
           Order from{" "}
