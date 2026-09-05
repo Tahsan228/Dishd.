@@ -28,8 +28,8 @@
   --color-surface-sunk: #F7EDE8;  /* inset areas, image placeholders */
 
   /* type — wired to next/font in app/layout.tsx */
-  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  --font-sans:    var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-face), "Iowan Old Style", Georgia, serif;
+  --font-sans:    var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Committed light palette. Declared so browsers don't auto-invert form controls. */
@@ -42,12 +42,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Display face carries the wordmark's editorial character. */
+/* Display face carries the wordmark's editorial character. Instrument Serif is
+   optically large, so it wants slightly tighter tracking and a shorter leading
+   than a text serif would. */
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
-  font-variation-settings: "SOFT" 0, "WONK" 1;
-  letter-spacing: -0.015em;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
 }
+
+body { letter-spacing: -0.006em; }
 
 /* Scores and stats must not jitter as digits change. */
 .tabular { font-variant-numeric: tabular-nums; }
@@ -56,4 +61,105 @@ h1, h2, h3, .font-display {
 @media print {
   .no-print { display: none !important; }
   body { background: #fff; }
+}
+
+/* ==========================================================================
+   Motion.
+   Editorial and restrained — things settle into place rather than bounce.
+   Every animation is disabled under prefers-reduced-motion at the bottom.
+   ========================================================================== */
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes seal {
+  0%   { opacity: 0; transform: scale(0.82) rotate(-8deg); }
+  60%  { opacity: 1; transform: scale(1.06) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes sweep {
+  from { background-position: -180% 0; }
+  to   { background-position: 180% 0; }
+}
+@keyframes fill-bar {
+  from { transform: scaleX(0); }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+.rise      { animation: rise .5s cubic-bezier(.22,.61,.36,1) both; }
+.fade      { animation: fade .4s ease both; }
+.seal      { animation: seal .55s cubic-bezier(.34,1.56,.64,1) both; }
+.pulse-soft{ animation: pulse-soft 2s ease-in-out infinite; }
+
+/* Staggering: children settle one after another rather than all at once. */
+.stagger > * { animation: rise .5s cubic-bezier(.22,.61,.36,1) both; }
+.stagger > *:nth-child(1) { animation-delay: .04s }
+.stagger > *:nth-child(2) { animation-delay: .09s }
+.stagger > *:nth-child(3) { animation-delay: .14s }
+.stagger > *:nth-child(4) { animation-delay: .19s }
+.stagger > *:nth-child(5) { animation-delay: .24s }
+.stagger > *:nth-child(6) { animation-delay: .29s }
+.stagger > *:nth-child(7) { animation-delay: .34s }
+.stagger > *:nth-child(8) { animation-delay: .39s }
+.stagger > *:nth-child(n+9) { animation-delay: .44s }
+
+/* Cards lift slightly and warm their border on hover. */
+.lift {
+  transition: transform .22s cubic-bezier(.22,.61,.36,1),
+              box-shadow .22s ease, border-color .22s ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px -14px rgb(0 55 44 / .35);
+}
+.lift:active { transform: translateY(-1px); }
+
+/* Image inside a hovered card drifts in very slightly. */
+.lift img { transition: transform .5s cubic-bezier(.22,.61,.36,1); }
+.lift:hover img { transform: scale(1.035); }
+
+/* Loading placeholder that reads as "content is coming", not "broken". */
+.shimmer {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-surface-sunk) 30%,
+    color-mix(in srgb, var(--color-forest-soft) 70%, white) 50%,
+    var(--color-surface-sunk) 70%
+  );
+  background-size: 220% 100%;
+  animation: sweep 1.5s linear infinite;
+}
+
+/* Credibility bars grow from the left on first paint. */
+.grow-bar {
+  transform-origin: left;
+  animation: fill-bar .8s cubic-bezier(.22,.61,.36,1) both;
+  animation-delay: .15s;
+}
+
+/* The provenance sheet marker turns instead of jumping. */
+details > summary { transition: background-color .18s ease; }
+details .chev { transition: transform .22s cubic-bezier(.22,.61,.36,1); }
+details[open] .chev { transform: rotate(180deg); }
+
+button, a { transition: background-color .18s ease, color .18s ease, border-color .18s ease, opacity .18s ease; }
+
+/* Respect the user's setting. Non-negotiable. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lift:hover { transform: none; }
+  .lift:hover img { transform: none; }
 }
