@@ -152,6 +152,32 @@ const { error: forgeErr } = await other.from("logs").insert({
 check("a user cannot write a log as somebody else", Boolean(forgeErr),
   forgeErr ? "blocked by RLS" : "NOT BLOCKED");
 
+/* 6 ------------------------------- verification cannot be forged (0004) */
+// A buyer owns what their review SAYS, never whether it COUNTS. Without the
+// trigger from migration 0004 this passes and the whole "transaction-backed"
+// claim collapses.
+const { data: unver } = await admin
+  .from("logs")
+  .insert({ buyer_id: buyerId, kitchen_id: kitchen.id, rating_10: 2, is_verified: false })
+  .select("id")
+  .single();
+
+await buyer.from("logs")
+  .update({ is_verified: true, rating_10: 10, body: "edited" })
+  .eq("id", unver.id);
+
+const { data: forged } = await admin
+  .from("logs").select("is_verified, rating_10, body").eq("id", unver.id).single();
+
+check("a buyer cannot promote their own log to verified",
+  forged.is_verified === false,
+  forged.is_verified ? "FORGED — apply migration 0004" : "provenance frozen");
+check("but they can still edit what the review says",
+  forged.rating_10 === 10 && forged.body === "edited",
+  `rating ${forged.rating_10}`);
+
+await admin.from("logs").delete().eq("id", unver.id);
+
 /* cleanup */
 await admin.from("orders").delete().eq("id", order.id);
 await admin.auth.admin.deleteUser(madeStranger.user.id);

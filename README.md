@@ -356,6 +356,39 @@ Every screen must work at **390 px wide**, one-handed. This is a phone app that 
 
 ---
 
+## Host answers to the social workstream's open questions
+
+Raised in `lib/social/HANDOFF.md`. All three are now resolved host-side.
+
+**1. Revenue and operating history for the Business Record.** Migration 0004 adds
+two trigger-maintained columns on `kitchens`, so the record can show real figures
+instead of labelling them unavailable:
+
+```ts
+revenue_cents: number;              // sum of completed orders
+first_completed_at: string | null;  // ISO; operating history = now - this
+```
+
+"Clean operation" is `upheld_flags === 0 && open_incidents === 0`, both already
+on the row. Do not infer revenue from anything else, and do not treat account age
+as trading history — a kitchen can exist for months before its first sale.
+
+**2. Review photo storage.** A public `photos` bucket exists. Upload to
+`photos/reviews/<logId>.<ext>` with the user-scoped client and store the public
+URL on `logs.photo_url`. Keep accepting a pasted HTTPS URL as the fallback.
+(`receipts` is a separate bucket and is not for review photos.)
+
+**3. Verification forgery — you were right, and it was exploitable.** Confirmed by
+direct API call: a buyer could PATCH their own log to `is_verified = true` on a
+review never backed by an order. Migration 0004 adds a BEFORE UPDATE trigger that
+restores `buyer_id`, `kitchen_id`, `order_id` and `is_verified` to their previous
+values on every update. RLS could not express this, because a WITH CHECK
+expression cannot see the OLD row. Your server action needs no change: buyers keep
+full control of what a review *says* and none over whether it *counts*.
+`npm run verify` now covers it.
+
+---
+
 ## Current state
 
 **Done:** Next.js 16 + React 19 + Tailwind v4 scaffold · all dependencies installed · design tokens in `globals.css` · `lib/types.ts` and `lib/utils.ts` · core schema in `supabase/migrations/0001_init.sql`.
