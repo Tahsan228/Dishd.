@@ -147,7 +147,15 @@ export function SignUpForm({ next }: { next: string }) {
 
       <p className="text-center text-[11px] leading-relaxed text-ink-muted">
         Dishd does not certify halal status or inspect home kitchens. You will
-        confirm what that means before your first order.
+        confirm what that means before your first order. See our{" "}
+        <a href="/legal/terms" className="underline underline-offset-2 hover:text-forest">
+          terms
+        </a>{" "}
+        and{" "}
+        <a href="/legal/privacy" className="underline underline-offset-2 hover:text-forest">
+          privacy notice
+        </a>
+        .
       </p>
     </form>
   );
