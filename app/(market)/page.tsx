@@ -1,29 +1,14 @@
-import Image from "next/image";
 import { listActiveKitchens } from "@/lib/market/kitchens";
 import { KitchenCard } from "@/components/market/kitchen-card";
+import { SiteHeader } from "@/components/market/site-header";
 
 export default async function DiscoveryPage() {
   const kitchens = await listActiveKitchens();
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 pb-16">
-      <header className="flex items-center justify-between py-5">
-        <Image
-          src="/logos/PaleBackgroundGreenText.png"
-          alt="Dishd"
-          width={104}
-          height={30}
-          priority
-          className="h-7 w-auto"
-        />
-        <a
-          href="/cook"
-          className="rounded-full bg-forest px-4 py-2 text-sm font-medium text-cream transition hover:bg-forest-deep"
-        >
-          Start selling
-        </a>
-      </header>
-
+    <>
+      <SiteHeader />
+      <main className="mx-auto w-full max-w-5xl px-4 pb-16 pt-8">
       <h1 className="font-display text-3xl leading-tight text-forest sm:text-4xl">
         Halal home kitchens near you
       </h1>
@@ -45,6 +30,7 @@ export default async function DiscoveryPage() {
           ))}
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }
