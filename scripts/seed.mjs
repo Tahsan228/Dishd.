@@ -331,15 +331,27 @@ async function main() {
       "Really good. Slightly heavy on the salt for me but my family disagreed loudly.",
       "You can tell this is someone's actual home cooking rather than a restaurant pretending.",
       "Picked up in five minutes, no fuss. Food was excellent and the sourcing was all listed up front which I appreciated.",
-      null,
+      "Ordered for four people and there was still some left. Good value, and the packaging held the heat properly on the drive back.",
+      "Better than the restaurant version I usually get on this side of town, and about half the price.",
+      "Kids ate all of it without complaint, which is the only review that matters in my house.",
     ];
-    const updates = (logs ?? []).slice(0, k.rating.length).map((l, i) => ({
-      id: l.id, rating_10: k.rating[i],
-      body: BODIES[i % BODIES.length],
-      photo_url: i % 3 === 0 ? k.items[i % k.items.length].img : null,
-      sourcing_affirmed: true,
-      logged_at: daysAgo(3 + i * 2),
-    }));
+    // Spread every log across the kitchen's trading history. The trigger stamps
+    // each auto-log with now(), so without this the unrated check-ins all sort
+    // above the written reviews and the feed looks empty.
+    const all = logs ?? [];
+    const span = Math.max(k.age - 6, 4);
+    const updates = all.map((l, i) => {
+      const rated = i % 5 !== 4;               // ~80% get a rating
+      const writes = rated && i % 2 === 0;     // ~40% also write something
+      return {
+        id: l.id,
+        rating_10: rated ? k.rating[i % k.rating.length] : null,
+        body: writes ? BODIES[i % BODIES.length] : null,
+        photo_url: writes && i % 3 === 0 ? k.items[i % k.items.length].img : null,
+        sourcing_affirmed: rated ? true : null,
+        logged_at: daysAgo(3 + Math.floor((i / Math.max(all.length, 1)) * span)),
+      };
+    });
     for (const u of updates) {
       await db.from("logs").update(u).eq("id", u.id);
     }
