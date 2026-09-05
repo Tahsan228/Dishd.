@@ -45,8 +45,20 @@ export async function SiteHeader() {
               {/* The personal diary is the social half of the product; without
                   a link here it was only reachable from an order. */}
               <Link
-                href="/diary"
+                href="/community"
+                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest sm:inline-block"
+              >
+                Community
+              </Link>
+              <Link
+                href="/rewards"
                 className="rounded-full px-3 py-2 text-ink-muted hover:text-forest"
+              >
+                Points
+              </Link>
+              <Link
+                href="/diary"
+                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest sm:inline-block"
               >
                 Diary
               </Link>

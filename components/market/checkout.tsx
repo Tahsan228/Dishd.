@@ -188,10 +188,10 @@ export function Checkout({
             <label htmlFor="reward-credit" className="text-sm font-medium">Use a reward credit</label>
             <select id="reward-credit" value={reward?.id??''} onChange={e=>setRewardId(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-cream p-3 text-sm">
               <option value="">Save my credits for later</option>
-              {rewards.map(r=><option key={r.id} value={r.id} disabled={subtotal<r.minimum_order_cents}>{formatCents(r.credit_cents)} credit ? {formatCents(r.minimum_order_cents)} minimum</option>)}
+              {rewards.map(r=><option key={r.id} value={r.id} disabled={subtotal<r.minimum_order_cents}>{formatCents(r.credit_cents)} credit &middot; {formatCents(r.minimum_order_cents)} minimum</option>)}
             </select>
             <Link href="/rewards" className="mt-2 inline-block text-sm text-forest underline">Earn and redeem points</Link>
-            {reward && <p className="mt-3 text-sm text-forest">Reward applied: ?{formatCents(reward.credit_cents)}</p>}
+            {reward && <p className="mt-3 text-sm text-forest">Reward applied: &minus;{formatCents(reward.credit_cents)}</p>}
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
             <span className="text-sm text-ink-muted">Total</span>
