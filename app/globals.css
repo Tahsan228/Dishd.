@@ -28,8 +28,8 @@
   --color-surface-sunk: #F7EDE8;  /* inset areas, image placeholders */
 
   /* type — wired to next/font in app/layout.tsx */
-  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  --font-sans:    var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-face), "Iowan Old Style", Georgia, serif;
+  --font-sans:    var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Committed light palette. Declared so browsers don't auto-invert form controls. */
@@ -42,12 +42,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Display face carries the wordmark's editorial character. */
+/* Display face carries the wordmark's editorial character. Instrument Serif is
+   optically large, so it wants slightly tighter tracking and a shorter leading
+   than a text serif would. */
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
-  font-variation-settings: "SOFT" 0, "WONK" 1;
-  letter-spacing: -0.015em;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
 }
+
+body { letter-spacing: -0.006em; }
 
 /* Scores and stats must not jitter as digits change. */
 .tabular { font-variant-numeric: tabular-nums; }

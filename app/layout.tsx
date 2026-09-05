@@ -1,18 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Instrument_Serif, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 
-// Fraunces carries the wordmark's editorial character; WONK is set in globals.css.
-const fraunces = Fraunces({
+// Instrument Serif matches the wordmark's high-contrast editorial cut far more
+// closely than a variable workhorse serif does, and Instrument Sans is its
+// designed companion — so the pairing reads as one voice rather than two fonts
+// picked independently.
+const display = Instrument_Serif({
   subsets: ["latin"],
-  variable: "--font-fraunces",
-  axes: ["SOFT", "WONK", "opsz"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-display-face",
   display: "swap",
 });
 
-const inter = Inter({
+const sans = Instrument_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sans-face",
   display: "swap",
 });
 
@@ -36,7 +40,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="en" className={`${display.variable} ${sans.variable}`}>
       <body className="min-h-dvh bg-cream text-ink antialiased">{children}</body>
     </html>
   );
