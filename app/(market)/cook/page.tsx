@@ -55,7 +55,7 @@ export default async function CookDashboard() {
           <ChefHat className="mx-auto h-8 w-8 text-forest" aria-hidden />
           <h1 className="mt-3 font-display text-3xl text-forest">Start selling on Dishd</h1>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink-muted">
-            You&apos;ll need a MEHKO permit for your county, and a purchase
+            You&apos;ll need your county&apos;s home kitchen permit, and a purchase
             receipt for any meat you cook with. Six steps, and nothing you can
             skip — that is what the badge on your page is worth.
           </p>

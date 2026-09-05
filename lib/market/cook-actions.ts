@@ -113,7 +113,7 @@ export async function createKitchen(
   return { ok: true, message: "Kitchen created." };
 }
 
-/** Step 2 — the MEHKO permit claim. */
+/** Step 2 — the home-kitchen permit claim. The programme differs by state. */
 export async function claimPermit(
   _prev: CookActionState,
   form: FormData,
@@ -225,7 +225,7 @@ export async function goLive(): Promise<CookActionState> {
   // The gate is the same one a buyer sees: a permit claimed, and at least one
   // dish that can actually be sold.
   if (kitchen.permit_status === "none") {
-    return { ok: false, message: "Claim your MEHKO permit before opening." };
+    return { ok: false, message: "Claim your home kitchen permit before opening." };
   }
 
   const { count } = await supabase

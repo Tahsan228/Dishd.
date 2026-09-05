@@ -13,7 +13,7 @@
  *  2. Kitchens are spread across all four credibility tiers, plus one banned
  *     tombstone, so every visual state has something to render.
  *
- * Location is Fremont, Alameda County CA — a real MEHKO county with a large
+ * Location is Bergen County NJ — a dense, heavily Muslim corridor with a large
  * Afghan, Pakistani and Yemeni community, so the premise is plausible.
  */
 
@@ -47,7 +47,8 @@ function fuzz(lat, lng, seed) {
   ];
 }
 
-const FREMONT = [37.5485, -121.9886];
+/** Hackensack, Bergen County NJ — the launch market. */
+const BERGEN = [40.8859, -74.0435];
 
 /* ------------------------------------------------------------------ people */
 
@@ -61,20 +62,20 @@ const COOKS = [
 ];
 
 const BUYERS = [
-  { h: "yusuf", name: "Yusuf Ali", email: "yusuf@dishd.test", city: "Fremont, CA" },
-  { h: "mariam", name: "Mariam Chen", email: "mariam@dishd.test", city: "Newark, CA" },
-  { h: "zaid", name: "Zaid Patel", email: "zaid@dishd.test", city: "Fremont, CA" },
-  { h: "sana", name: "Sana Iqbal", email: "sana@dishd.test", city: "Union City, CA" },
-  { h: "tariq", name: "Tariq Osman", email: "tariq@dishd.test", city: "Hayward, CA" },
+  { h: "yusuf", name: "Yusuf Ali", email: "yusuf@dishd.test", city: "Hackensack, NJ" },
+  { h: "mariam", name: "Mariam Chen", email: "mariam@dishd.test", city: "Teaneck, NJ" },
+  { h: "zaid", name: "Zaid Patel", email: "zaid@dishd.test", city: "Hackensack, NJ" },
+  { h: "sana", name: "Sana Iqbal", email: "sana@dishd.test", city: "Fort Lee, NJ" },
+  { h: "tariq", name: "Tariq Osman", email: "tariq@dishd.test", city: "Paterson, NJ" },
 ];
 
 const STORES = [
-  { name: "Al-Salam Halal Meats", address: "39200 Paseo Padre Pkwy", city: "Fremont", state: "CA", cert_body: "HFSAA" },
-  { name: "Madina Halal Market", address: "4104 Peralta Blvd", city: "Fremont", state: "CA", cert_body: "IFANCA" },
-  { name: "Zaytuna Meat & Grocery", address: "37083 Fremont Blvd", city: "Fremont", state: "CA", cert_body: "HFSAA" },
-  { name: "Kabul Halal Foods", address: "3900 Thornton Ave", city: "Fremont", state: "CA", cert_body: "HFSAA" },
-  { name: "Sahara Halal Market", address: "31191 Mission Blvd", city: "Hayward", state: "CA", cert_body: "IFANCA" },
-  { name: "Bay Area Halal Butchers", address: "2020 Decoto Rd", city: "Union City", state: "CA", cert_body: "HFSAA" },
+  { name: "Al-Khayam Halal Meat", address: "195 Main St", city: "Hackensack", state: "NJ", cert_body: "HFSAA" },
+  { name: "Madina Halal Market", address: "418 Cedar Ln", city: "Teaneck", state: "NJ", cert_body: "IFANCA" },
+  { name: "Zaytuna Meat & Grocery", address: "2140 Lemoine Ave", city: "Fort Lee", state: "NJ", cert_body: "HFSAA" },
+  { name: "Kabul Halal Foods", address: "356 Main St", city: "Paterson", state: "NJ", cert_body: "HFSAA" },
+  { name: "Sahara Halal Market", address: "742 Anderson Ave", city: "Cliffside Park", state: "NJ", cert_body: "IFANCA" },
+  { name: "Bergen Halal Butchers", address: "24-16 Broadway", city: "Fair Lawn", state: "NJ", cert_body: "HFSAA" },
 ];
 
 /**
@@ -86,8 +87,8 @@ const KITCHENS = [
     slug: "aminas-kitchen", owner: "amina", name: "Amina's Kitchen",
     bio: "Slow-cooked Afghan and Pakistani home food. Everything made the morning you collect it, in a kitchen my grandmother taught me to run.",
     tags: ["Afghan", "Pakistani", "Biryani"], hero: img("1563379091339-03b21ab4a4f8"),
-    hood: "Glenmoor, Fremont", addr: "4218 Kimberly Ave", zip: "94536",
-    permit: "verified", permitNo: "MEHKO-ALA-2024-0187",
+    hood: "Fairmount, Hackensack", addr: "212 Union St", zip: "07601",
+    permit: "verified", permitNo: "NJ-CFO-BER-2024-0187",
     orders: 40, streak: 12, rating: [9, 10, 9, 10, 8, 10, 9, 10],
     age: 150, card: true,
     items: [
@@ -101,8 +102,8 @@ const KITCHENS = [
     slug: "hafsas-table", owner: "hafsa", name: "Hafsa's Table",
     bio: "Bengali fish and rice, cooked for my neighbours since 2023.",
     tags: ["Bengali", "Fish"], hero: img("1567620905732-2d1ec7ab7445"),
-    hood: "Centerville, Fremont", addr: "37550 Second St", zip: "94536",
-    permit: "verified", permitNo: "MEHKO-ALA-2024-0203",
+    hood: "Cedar Lane, Teaneck", addr: "1421 Palisade Ave", zip: "07666",
+    permit: "verified", permitNo: "NJ-CFO-BER-2024-0203",
     orders: 25, streak: 5, rating: [9, 8, 9, 9, 8, 9], age: 96, card: true,
     items: [
       { n: "Beef Tehari", d: "Short-grain rice cooked with mustard oil and green chilli.", p: 1400, meat: "beef", a: ["mustard"], img: img("1546833999-b9f581a1996d", 600) },
@@ -114,8 +115,8 @@ const KITCHENS = [
     slug: "omars-grill", owner: "omar", name: "Omar's Grill",
     bio: "Charcoal kebabs on weekends. Small batches, collect while hot.",
     tags: ["Turkish", "Kebab"], hero: img("1601050690597-df0568f70950"),
-    hood: "Irvington, Fremont", addr: "41028 Chapel Way", zip: "94538",
-    permit: "claimed", permitNo: "MEHKO-ALA-2025-0411",
+    hood: "Main Street, Fort Lee", addr: "1590 Center Ave", zip: "07024",
+    permit: "claimed", permitNo: "NJ-CFO-BER-2025-0411",
     orders: 12, streak: 2, rating: [8, 8, 9, 7, 8], age: 58, card: true,
     items: [
       { n: "Adana Kebab", d: "Hand-minced lamb on flat skewers, sumac onion.", p: 1500, meat: "lamb", a: ["none_declared"], img: img("1517248135467-4c7edcad34c4", 600) },
@@ -126,8 +127,8 @@ const KITCHENS = [
     slug: "laylas-sofra", owner: "layla", name: "Layla's Sofra",
     bio: "Levantine mezze and slow-roast lamb. Fridays and Saturdays only.",
     tags: ["Levantine", "Mezze"], hero: img("1596797038530-2c107229654b"),
-    hood: "Niles, Fremont", addr: "37450 Niles Blvd", zip: "94536",
-    permit: "claimed", permitNo: "MEHKO-ALA-2025-0455",
+    hood: "South Paterson, Paterson", addr: "920 Main St", zip: "07503",
+    permit: "claimed", permitNo: "NJ-CFO-PAS-2025-0455",
     orders: 8, streak: 1, rating: [9, 9, 10, 8], age: 44, card: false,
     items: [
       { n: "Lamb Ouzi", d: "Slow-roast shoulder over spiced rice and pine nut.", p: 1800, meat: "lamb", a: ["tree_nuts"], img: img("1596797038530-2c107229654b", 600) },
@@ -138,7 +139,7 @@ const KITCHENS = [
     slug: "bilals-breakfast", owner: "bilal", name: "Bilal's Breakfast",
     bio: "Just started. Weekend halwa puri and chana, the way my mum makes it.",
     tags: ["Pakistani", "Breakfast"], hero: img("1512058564366-18510be2db19"),
-    hood: "Ardenwood, Fremont", addr: "34588 Ardenwood Blvd", zip: "94555",
+    hood: "Bergenfield centre, Bergenfield", addr: "88 Washington Ave", zip: "07621",
     permit: "none", permitNo: null,
     orders: 2, streak: 0, rating: [8, 9], age: 16, card: false,
     items: [
@@ -152,7 +153,7 @@ const BANNED = {
   slug: "golden-pot", owner: "nadia", name: "The Golden Pot",
   bio: "Formerly listed on Dishd.",
   tags: ["Mixed"], hero: img("1546833999-b9f581a1996d"),
-  hood: "Centerville, Fremont", addr: "37000 Fremont Blvd", zip: "94536",
+  hood: "Palisade Ave, Cliffside Park", addr: "640 Anderson Ave", zip: "07010",
   reason:
     "Sourcing misrepresentation: receipts submitted for meat that was not purchased from the declared halal supplier. Permanently removed 12 August 2026.",
 };
@@ -186,12 +187,12 @@ async function makeUser({ email, name, h, city }) {
   // letting the trigger derive one from the email.
   const { data, error } = await db.auth.admin.createUser({
     email, password: "dishd-demo-1234", email_confirm: true,
-    user_metadata: { handle: h, display_name: name, city: city ?? "Fremont, CA" },
+    user_metadata: { handle: h, display_name: name, city: city ?? "Hackensack, NJ" },
   });
   if (error) throw new Error(`${email}: ${error.message}`);
   const id = data.user.id;
   const { error: pe } = await db.from("profiles").upsert({
-    id, handle: h, display_name: name, city: city ?? "Fremont, CA",
+    id, handle: h, display_name: name, city: city ?? "Hackensack, NJ",
     bio: null, avatar_url: null,
   }, { onConflict: "id" });
   if (pe) throw new Error(`profile ${h}: ${pe.message}`);
@@ -212,11 +213,11 @@ async function main() {
 
   console.log("kitchens…");
   for (const k of KITCHENS) {
-    const [alat, alng] = fuzz(FREMONT[0], FREMONT[1], k.slug);
+    const [alat, alng] = fuzz(BERGEN[0], BERGEN[1], k.slug);
     const { data: kitchen, error } = await db.from("kitchens").insert({
       owner_id: ids[k.owner], name: k.name, slug: k.slug, bio: k.bio,
       hero_url: k.hero, cuisine_tags: k.tags,
-      state_code: "CA", county: "Alameda",
+      state_code: "NJ", county: "Bergen",
       mehko_permit_no: k.permitNo, permit_status: k.permit,
       approx_lat: alat, approx_lng: alng, neighborhood_label: k.hood,
       accepts_cash: true, accepts_card: k.card, stripe_onboarded: k.card,
@@ -226,8 +227,8 @@ async function main() {
     const kid = kitchen.id;
 
     await db.from("kitchen_addresses").insert({
-      kitchen_id: kid, line1: k.addr, city: "Fremont", zip: k.zip,
-      lat: FREMONT[0] + 0.004, lng: FREMONT[1] - 0.003,
+      kitchen_id: kid, line1: k.addr, city: k.hood.split(", ").pop(), zip: k.zip,
+      lat: BERGEN[0] + 0.004, lng: BERGEN[1] - 0.003,
     });
 
     // Halal sources: two per kitchen, drawn from the real directory.
@@ -374,11 +375,11 @@ async function main() {
   }
 
   console.log("banned kitchen…");
-  const [blat, blng] = fuzz(FREMONT[0], FREMONT[1], BANNED.slug);
+  const [blat, blng] = fuzz(BERGEN[0], BERGEN[1], BANNED.slug);
   await db.from("kitchens").insert({
     owner_id: ids[BANNED.owner], name: BANNED.name, slug: BANNED.slug,
     bio: BANNED.bio, hero_url: BANNED.hero, cuisine_tags: BANNED.tags,
-    state_code: "CA", county: "Alameda", permit_status: "none",
+    state_code: "NJ", county: "Bergen", permit_status: "none",
     approx_lat: blat, approx_lng: blng, neighborhood_label: BANNED.hood,
     status: "banned", banned_reason: BANNED.reason, banned_at: daysAgo(24),
     created_at: daysAgo(200),

@@ -34,7 +34,7 @@ export default async function CookStartPage() {
 
   const { data: kitchen } = await supabase
     .from("kitchens")
-    .select("id, name, slug, status, permit_status")
+    .select("id, name, slug, status, permit_status, county, state_code")
     .eq("owner_id", user.id)
     .maybeSingle();
 
@@ -135,7 +135,12 @@ export default async function CookStartPage() {
                     {isCurrent && (
                       <div className="mt-4 border-t border-line pt-4">
                         {s.key === "kitchen" && <KitchenForm />}
-                        {s.key === "permit" && <PermitForm />}
+                        {s.key === "permit" && (
+                          <PermitForm
+                            county={kitchen?.county ?? ""}
+                            stateCode={kitchen?.state_code ?? ""}
+                          />
+                        )}
                         {s.key === "sources" && <SourceForm />}
                         {s.key === "receipt" && kitchen && (
                           <ReceiptForm

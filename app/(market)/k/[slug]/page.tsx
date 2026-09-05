@@ -83,7 +83,7 @@ export default async function KitchenPage({
           {kitchen.permit_status === "verified" && (
             <span className="flex items-center gap-1.5 rounded-full bg-forest px-3 py-1.5 text-xs font-medium text-cream">
               <BadgeCheck className="h-4 w-4" aria-hidden />
-              MEHKO permit verified
+              Permit verified
             </span>
           )}
         </div>

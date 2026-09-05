@@ -14,6 +14,7 @@ import {
   MEAT_TYPES,
   type CookActionState,
 } from "@/lib/market/cook-onboarding";
+import { findJurisdiction } from "@/lib/market/jurisdictions";
 import { cn } from "@/lib/utils";
 
 const initial: CookActionState = { ok: false, message: "" };
@@ -93,11 +94,11 @@ export function KitchenForm() {
               name: "Sabiha's Kitchen",
               bio: "Home-style Bengali cooking, slow-braised and cooked to order for pickup.",
               cuisineTags: "bengali, halal, home-style",
-              line1: "412 Peralta Boulevard",
+              line1: "212 Main Street",
               line2: "Apt 3",
-              city: "Fremont",
-              zip: "94536",
-              county: "Alameda",
+              city: "Hackensack",
+              zip: "07601",
+              county: "Bergen",
             })
           }
         />
@@ -163,10 +164,10 @@ export function KitchenForm() {
           <input
             type="hidden"
             name="stateCode"
-            value={COUNTIES.find((c) => c.county === v.county)?.stateCode ?? "CA"}
+            value={COUNTIES.find((c) => c.county === v.county)?.stateCode ?? COUNTIES[0].stateCode}
           />
           <span className="mt-1 block text-xs text-ink-muted">
-            Dishd only operates where it understands the cottage-food rules.
+            Dishd only operates where it understands the home-cooking rules.
           </span>
         </label>
       </fieldset>
@@ -179,22 +180,31 @@ export function KitchenForm() {
 
 /* ------------------------------------------------------------------ step 2 */
 
-export function PermitForm() {
+export function PermitForm({ county, stateCode }: { county: string; stateCode: string }) {
   const [state, action, pending] = useActionState(claimPermit, initial);
   const [permitNo, setPermitNo] = useState("");
+  const jurisdiction = findJurisdiction(county, stateCode);
+  const demoPermitNo = `${stateCode}-${county.slice(0, 3).toUpperCase()}-2026-4417`;
 
   return (
     <form action={action} className="space-y-4">
       <div className="rounded-xl border border-amber/30 bg-amber/10 p-4 text-xs leading-relaxed text-ink">
-        A MEHKO permit is issued by your county health department and is what
-        makes selling food cooked at home legal. Dishd records the number you
-        enter as <strong>claimed</strong>. It becomes <strong>verified</strong>{" "}
-        only after a reviewer checks it against the county register — the
-        verified mark on your page means that check happened.
+        {/* Naming the wrong programme sends a cook after a licence that does
+            not exist where they live, so the jurisdiction decides the wording. */}
+        A <strong>{jurisdiction?.permitName ?? "home kitchen permit"}</strong> is
+        issued by {jurisdiction?.issuer ?? "your state or county health department"}{" "}
+        and is what makes selling food cooked at home legal. Dishd records the
+        number you enter as <strong>claimed</strong>. It becomes{" "}
+        <strong>verified</strong> only after a reviewer checks it against the
+        official register — the verified mark on your page means that check
+        happened.
+        {jurisdiction?.caveat && (
+          <span className="mt-2 block font-medium text-clay">{jurisdiction.caveat}</span>
+        )}
       </div>
 
       <div className="flex justify-end">
-        <DemoFill onClick={() => setPermitNo("MEHKO-ALA-2026-4417")} />
+        <DemoFill onClick={() => setPermitNo(demoPermitNo)} />
       </div>
 
       <label className="block">

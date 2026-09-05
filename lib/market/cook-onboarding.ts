@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { JURISDICTIONS } from "./jurisdictions";
 
 /**
  * Validation for cook onboarding, kept out of the "use server" module so both
@@ -27,13 +28,16 @@ export const ALLERGENS = [
   "shellfish",
 ] as const;
 
-/** Where Dishd currently has a cottage-food framework it understands. */
-export const COUNTIES: { county: string; stateCode: string }[] = [
-  { county: "Alameda", stateCode: "CA" },
-  { county: "Santa Clara", stateCode: "CA" },
-  { county: "San Mateo", stateCode: "CA" },
-  { county: "Contra Costa", stateCode: "CA" },
-];
+/**
+ * Where Dishd has a home-cooking framework it understands.
+ *
+ * Derived from JURISDICTIONS so the county list and the permit named on screen
+ * can never drift apart — offering a county whose permit we cannot name would
+ * send a cook looking for the wrong licence.
+ */
+export const COUNTIES: { county: string; stateCode: string }[] = JURISDICTIONS.map(
+  ({ county, stateCode }) => ({ county, stateCode }),
+);
 
 export const kitchenSchema = z.object({
   name: z.string().trim().min(2, "Give your kitchen a name.").max(80, "Keep the name under 80 characters."),
@@ -92,7 +96,7 @@ export const menuItemSchema = z.object({
  */
 export const ONBOARDING_STEPS = [
   { key: "kitchen", title: "Your kitchen", blurb: "Name, cuisine, and the address you cook from." },
-  { key: "permit", title: "MEHKO permit", blurb: "The county permit that makes home cooking legal." },
+  { key: "permit", title: "Home kitchen permit", blurb: "The permit your county requires to cook and sell from home." },
   { key: "sources", title: "Halal suppliers", blurb: "Where you buy meat. Receipts are matched to these." },
   { key: "receipt", title: "Sourcing receipt", blurb: "Proof of purchase for the meat you cook with." },
   { key: "menu", title: "Your menu", blurb: "The dishes you sell, and what is in them." },
