@@ -7,6 +7,11 @@ import { OrderActions } from "@/components/market/order-actions-buttons";
 import { formatCents } from "@/lib/utils";
 
 export default async function CookDashboard() {
+  // Every other page guards this; without it a missing or mistyped Supabase
+  // URL takes the dashboard down with a 500 instead of sending the cook to
+  // sign in, which is where an unauthenticated visitor belongs anyway.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) redirect("/signin?next=/cook");
+
   const supabase = await createServerClient();
   const {
     data: { user },
