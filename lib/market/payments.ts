@@ -1,26 +1,23 @@
 import type { PaymentMethod } from "@/lib/types";
 
 /**
- * What Dishd can actually take money with today.
+ * What Dishd can actually take money with.
  *
- * The `stripe` package is installed, STRIPE_SECRET_KEY is checked by
- * `npm run check:env`, and `kitchens` carries accepts_card / stripe_onboarded —
- * but no checkout session is ever created and no webhook is handled. Until that
- * exists, a card order would be placed with payment_status 'unpaid', the buyer
- * would be shown "Total · card" and would reasonably believe they had paid, and
- * the cook would hand over food expecting to have been paid. Nothing in the
- * system would ever charge anyone.
+ * Card checkout is implemented (see lib/market/stripe.ts), but three things
+ * still have to be true before the option is offered, and each has a different
+ * cause, so each gets its own sentence:
  *
- * Offering a payment method that does not take payment is worse than not
- * offering it, so card is switched off at the source rather than left looking
- * available. Cash at pickup is a complete payment method for a pickup
- * marketplace; this is a smaller product, not a broken one.
+ *   1. The deployment has a Stripe key at all.
+ *   2. The cook has switched card on.
+ *   3. The cook has finished payment setup.
  *
- * To turn card on: implement checkout + the webhook that moves payment_status
- * to 'paid', then flip this to true. `cardAvailability` already carries the
- * per-kitchen onboarding check that will still apply.
+ * Offering a payment method that cannot take payment is worse than not offering
+ * one, so any of these failing hides card rather than letting an order be
+ * placed that nothing will ever charge.
+ *
+ * `stripeConfigured` is a parameter rather than an env read so this stays a
+ * pure function: the server passes what it knows, and the tests pass both.
  */
-export const CARD_CHECKOUT_IMPLEMENTED = false;
 
 export type CardAvailability = {
   /** Whether the buyer may choose card for this kitchen right now. */
@@ -29,12 +26,12 @@ export type CardAvailability = {
   reason: string | null;
 };
 
-export function cardAvailability(kitchen: {
-  accepts_card: boolean;
-  stripe_onboarded: boolean;
-}): CardAvailability {
-  if (!CARD_CHECKOUT_IMPLEMENTED) {
-    return { available: false, reason: "Card payment isn’t available yet — pay cash at pickup." };
+export function cardAvailability(
+  kitchen: { accepts_card: boolean; stripe_onboarded: boolean },
+  stripeConfigured: boolean,
+): CardAvailability {
+  if (!stripeConfigured) {
+    return { available: false, reason: "Card payment isn’t set up here — pay cash at pickup." };
   }
   if (!kitchen.accepts_card) {
     return { available: false, reason: "This cook hasn’t set up card payments yet." };
@@ -52,8 +49,9 @@ export function cardAvailability(kitchen: {
 export function paymentMethodError(
   method: PaymentMethod,
   kitchen: { accepts_card: boolean; stripe_onboarded: boolean; accepts_cash?: boolean },
+  stripeConfigured: boolean,
 ): string | null {
-  if (method === "card") return cardAvailability(kitchen).reason;
+  if (method === "card") return cardAvailability(kitchen, stripeConfigured).reason;
   if (kitchen.accepts_cash === false) return "This cook doesn’t take cash.";
   return null;
 }

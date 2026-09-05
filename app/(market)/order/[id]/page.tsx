@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Clock, CheckCircle2, ChefHat, Lock } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
+import { settleFromCheckout } from "@/lib/market/payment-settlement";
 import { SiteHeader } from "@/components/market/site-header";
 import { OrderReviewLink } from "@/components/social/order-review-link";
 import { ClearCartOnOrder } from "@/components/market/clear-cart-on-order";
@@ -15,8 +16,22 @@ const STEPS: { key: OrderStatus; label: string; note: string }[] = [
   { key: "completed", label: "Collected", note: "Rate your meal" },
 ];
 
-export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function OrderPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ session_id?: string }>;
+}) {
   const { id } = await params;
+  const { session_id: sessionId } = await searchParams;
+
+  // Returning from Stripe Checkout. The session id in the URL is not trusted:
+  // it is looked up through Stripe's API, and settlement only happens if Stripe
+  // itself says the session is paid AND names this order. Locally this is what
+  // records payment, since Stripe cannot reach localhost to fire the webhook.
+  if (sessionId) await settleFromCheckout(id, sessionId);
+
   const supabase = await createServerClient();
 
   const { data: order } = await supabase

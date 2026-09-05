@@ -47,6 +47,19 @@ STRIPE_SECRET_KEY=              # test mode
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
+Card checkout is live when `STRIPE_SECRET_KEY` is set. For production also set:
+
+```
+STRIPE_WEBHOOK_SECRET=   # from the Stripe dashboard, or `stripe listen`
+```
+
+Without it `/api/stripe/webhook` refuses **every** request rather than trusting
+an unsigned body — an unsigned "payment succeeded" would let anyone mark any
+order paid and collect food. Locally Stripe cannot reach `localhost`, so the
+order page confirms the session with Stripe directly on return, which covers a
+single buyer; run `stripe listen --forward-to localhost:3000/api/stripe/webhook`
+to exercise the webhook itself.
+
 Optional, and **must stay unset in production**:
 
 ```
@@ -435,12 +448,12 @@ in order, then re-run the seed.
 
 Still genuinely missing, and each is a real gap rather than polish:
 
-- **Card checkout.** Nothing creates a Stripe session or handles a webhook.
-  Card is switched off at the source (`lib/market/payments.ts`) rather than
-  left looking available, because taking a card order that never charges is
-  worse than not offering one. Cash at pickup works end to end. Implement
-  checkout plus the webhook that moves `payment_status` to `paid`, then flip
-  `CARD_CHECKOUT_IMPLEMENTED`.
+- **Paying the cook.** Card checkout works — Stripe Checkout, a signed webhook,
+  and a return-path confirmation — but the money lands in the *platform*
+  account. Stripe Connect is not built: `kitchens.stripe_account_id` is still
+  unused, so a card order is money Dishd holds and owes the cook rather than a
+  settled transfer. Cash at pickup is the only path that fully settles today.
+  Connect onboarding plus destination charges is the remaining work.
 - **Password reset.** There is no "forgot password" flow, so a real user who
   forgets one is locked out permanently.
 - **Email deliverability.** Sign-up assumes Supabase's built-in mailer; a real

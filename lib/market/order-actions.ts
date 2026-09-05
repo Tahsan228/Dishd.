@@ -3,11 +3,12 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, createServiceClient } from "@/lib/supabase/server";
 import type { OrderStatus } from "@/lib/types";
 import { ACK_VERSION, ACKNOWLEDGMENTS } from "@/lib/market/order-consent";
 import { transitionError, type OrderActor } from "@/lib/market/order-lifecycle";
 import { paymentMethodError } from "@/lib/market/payments";
+import { createCheckoutSession, stripeConfigured } from "@/lib/market/stripe";
 
 export type PlaceOrderState = { error?: string } | null;
 
@@ -70,9 +71,9 @@ export async function placeOrder(
   const paymentMethod = String(form.get("paymentMethod") ?? "cash") === "card" ? "card" : "cash";
 
   // The disabled radio is a hint, not a control: a form post can name any
-  // method. Nothing in the app creates a Stripe session yet, so a card order
-  // would leave the buyer believing they had paid and the cook handing over
-  // food unpaid.
+  // method. Card requires a Stripe key on this deployment and a cook who has
+  // finished payment setup — without both, an order would be placed that
+  // nothing could ever charge.
   const { data: kitchenPayment } = await supabase
     .from("kitchens")
     .select("accepts_cash, accepts_card, stripe_onboarded")
@@ -80,7 +81,7 @@ export async function placeOrder(
     .maybeSingle();
   if (!kitchenPayment) return { error: "That kitchen is no longer available." };
 
-  const paymentProblem = paymentMethodError(paymentMethod, kitchenPayment);
+  const paymentProblem = paymentMethodError(paymentMethod, kitchenPayment, stripeConfigured());
   if (paymentProblem) return { error: paymentProblem };
 
   const { data: order, error } = await supabase
@@ -139,6 +140,50 @@ export async function placeOrder(
       user_agent: ua,
     })),
   );
+
+  // Card orders detour through Stripe Checkout. The order row already exists,
+  // unpaid, so an abandoned checkout leaves a pending order the cook can
+  // decline rather than a silent gap — and the cook is never shown it as paid.
+  if (paymentMethod === "card") {
+    const lines = wanted.map((w) => {
+      const it = items.find((i) => i.id === w.id)!;
+      return { name: it.name, unitAmountCents: it.price_cents, qty: w.qty };
+    });
+
+    let checkoutUrl: string | null = null;
+    try {
+      const { data: kitchenName } = await supabase
+        .from("kitchens")
+        .select("name")
+        .eq("id", kitchenId)
+        .maybeSingle();
+
+      const session = await createCheckoutSession({
+        orderId: order.id,
+        kitchenName: kitchenName?.name ?? "a Dishd kitchen",
+        buyerEmail: user.email ?? null,
+        lines,
+      });
+
+      // payment_status and stripe_session_id are locked to the service role by
+      // migration 0005's trigger, so this write cannot go through the user's
+      // client — that is the point of the lock.
+      await createServiceClient()
+        .from("orders")
+        .update({ stripe_session_id: session.id })
+        .eq("id", order.id);
+
+      checkoutUrl = session.url;
+    } catch (error) {
+      // The order exists but cannot be paid for. Say so plainly rather than
+      // dropping the buyer on a confirmation page for an order nothing will
+      // charge.
+      const detail = error instanceof Error ? error.message : "Unknown error";
+      return { error: `Card checkout could not be started (${detail}). Your order is saved as unpaid.` };
+    }
+
+    if (checkoutUrl) redirect(checkoutUrl);
+  }
 
   redirect(`/order/${order.id}`);
 }

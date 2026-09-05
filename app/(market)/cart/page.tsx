@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/market/site-header";
 import { Checkout } from "@/components/market/checkout";
 import { currentProfile } from "@/lib/market/auth-actions";
 import { cardAvailability } from "@/lib/market/payments";
+import { stripeConfigured } from "@/lib/market/stripe";
 
 export const metadata: Metadata = {
   title: "Your cart · Dishd",
@@ -15,12 +16,16 @@ export default async function CartPage() {
   if (!(await currentProfile())) redirect("/signin?next=%2Fcart");
 
   /**
-   * Which kitchen is in the cart is only known in the browser, so this is the
-   * platform-level answer: card checkout is not implemented, so the reason is
-   * the same for every kitchen. When it ships, the per-kitchen onboarding check
-   * still runs in `placeOrder`, which is the boundary that decides.
+   * Which kitchen is in the cart is only known in the browser, so this answers
+   * the platform-level half: does this deployment have Stripe at all. The
+   * per-kitchen onboarding check still runs in `placeOrder`, which is the
+   * boundary that decides — so a cook who has not finished setup is refused
+   * there with their own message rather than here with a generic one.
    */
-  const { reason } = cardAvailability({ accepts_card: true, stripe_onboarded: true });
+  const { reason } = cardAvailability(
+    { accepts_card: true, stripe_onboarded: true },
+    stripeConfigured(),
+  );
 
   return (
     <>
