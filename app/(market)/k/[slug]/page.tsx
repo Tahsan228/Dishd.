@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { MapPin, BadgeCheck, Home, Ban } from "lucide-react";
-import { getKitchenBySlug } from "@/lib/market/kitchens";
+import { getKitchenBySlug, getKitchenMenu } from "@/lib/market/kitchens";
+import { currentProfile } from "@/lib/market/auth-actions";
+import { OrderPanel } from "@/components/market/order-panel";
 import { MenuGrid } from "@/components/market/menu-grid";
 import { SiteHeader } from "@/components/market/site-header";
 
@@ -20,13 +22,29 @@ export default async function KitchenPage({
   if (!kitchen) notFound();
 
   const banned = kitchen.status === "banned";
+  const [menu, profile] = await Promise.all([
+    getKitchenMenu(kitchen.id),
+    currentProfile(),
+  ]);
+
+  // Only dishes that are actually orderable: available, and if they contain
+  // meat, backed by a receipt that has cleared review.
+  const orderable = menu
+    .filter((m) => m.is_available)
+    .filter((m) => !m.contains_meat || m.sourcing_batches?.match_status === "verified")
+    .map((m) => ({
+      id: m.id,
+      name: m.name,
+      price_cents: m.price_cents,
+      contains_meat: m.contains_meat,
+    }));
 
   return (
     <>
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-5xl px-4 pb-20">
-        <div className="mt-4 aspect-[21/9] w-full overflow-hidden rounded-2xl bg-surface-sunk">
+        <div className="fade mt-4 aspect-[21/9] w-full overflow-hidden rounded-2xl bg-surface-sunk">
           {kitchen.hero_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -51,7 +69,7 @@ export default async function KitchenPage({
           </div>
         )}
 
-        <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
+        <div className="rise mt-5 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl leading-tight text-forest sm:text-4xl">
               {kitchen.name}
@@ -101,9 +119,18 @@ export default async function KitchenPage({
             </div>
           </div>
 
-          <aside className="order-1 space-y-4 lg:order-2">
+          <aside className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-20 lg:self-start">
             <KitchenCredibilityPanel kitchenId={kitchen.id} />
             <KitchenBadgeShelf kitchenId={kitchen.id} />
+            {!banned && orderable.length > 0 && (
+              <OrderPanel
+                kitchenId={kitchen.id}
+                slug={kitchen.slug}
+                items={orderable}
+                acceptsCard={kitchen.accepts_card}
+                signedIn={Boolean(profile)}
+              />
+            )}
           </aside>
         </div>
       </main>

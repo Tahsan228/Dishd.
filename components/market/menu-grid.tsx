@@ -96,13 +96,13 @@ export async function MenuGrid({ kitchenId }: { kitchenId: string }) {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="stagger grid gap-4 sm:grid-cols-2">
       {items.map((item) => (
         <article
           key={item.id}
-          className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface"
+          className="lift flex flex-col overflow-hidden rounded-xl border border-line bg-surface"
         >
-          <div className="aspect-[16/10] bg-surface-sunk">
+          <div className="aspect-[16/10] overflow-hidden bg-surface-sunk">
             {item.photo_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={item.photo_url} alt="" className="h-full w-full object-cover" />

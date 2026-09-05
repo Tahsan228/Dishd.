@@ -17,9 +17,9 @@ export function KitchenCard({ kitchen }: { kitchen: KitchenPublic }) {
   return (
     <Link
       href={`/k/${kitchen.slug}`}
-      className="group block overflow-hidden rounded-xl border border-line bg-surface transition hover:border-forest/30"
+      className="lift group block overflow-hidden rounded-xl border border-line bg-surface hover:border-forest/30"
     >
-      <div className="aspect-[16/10] w-full bg-surface-sunk">
+      <div className="aspect-[16/10] w-full overflow-hidden bg-surface-sunk">
         {kitchen.hero_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

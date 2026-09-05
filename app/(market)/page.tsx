@@ -9,7 +9,7 @@ export default async function DiscoveryPage() {
     <>
       <SiteHeader />
       <main className="mx-auto w-full max-w-5xl px-4 pb-16 pt-8">
-      <h1 className="font-display text-3xl leading-tight text-forest sm:text-4xl">
+      <h1 className="rise font-display text-3xl leading-tight text-forest sm:text-4xl">
         Halal home kitchens near you
       </h1>
       <p className="mt-2 max-w-xl text-ink-muted">
@@ -24,7 +24,7 @@ export default async function DiscoveryPage() {
           </p>
         </div>
       ) : (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="stagger mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {kitchens.map((k) => (
             <KitchenCard key={k.id} kitchen={k} />
           ))}
