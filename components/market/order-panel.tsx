@@ -17,13 +17,14 @@ export function OrderPanel({
   kitchenId,
   slug,
   items,
-  acceptsCard,
+  cardUnavailableReason,
   signedIn,
 }: {
   kitchenId: string;
   slug: string;
   items: OrderableItem[];
-  acceptsCard: boolean;
+  /** Null when card is genuinely payable; otherwise why it is not offered. */
+  cardUnavailableReason: string | null;
   signedIn: boolean;
 }) {
   const [qty, setQty] = useState<Record<string, number>>({});
@@ -95,17 +96,23 @@ export function OrderPanel({
               </label>
               <label
                 className={`flex flex-1 items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-sm ${
-                  acceptsCard ? "cursor-pointer has-checked:border-forest has-checked:bg-forest-soft" : "opacity-40"
+                  cardUnavailableReason
+                    ? "opacity-40"
+                    : "cursor-pointer has-checked:border-forest has-checked:bg-forest-soft"
                 }`}
               >
-                <input type="radio" name="paymentMethod" value="card" disabled={!acceptsCard} className="accent-[var(--color-forest)]" />
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="card"
+                  disabled={Boolean(cardUnavailableReason)}
+                  className="accent-[var(--color-forest)]"
+                />
                 Card
               </label>
             </div>
-            {!acceptsCard && (
-              <p className="mt-1 text-xs text-ink-muted">
-                This cook hasn&apos;t set up card payments yet.
-              </p>
+            {cardUnavailableReason && (
+              <p className="mt-1 text-xs text-ink-muted">{cardUnavailableReason}</p>
             )}
           </fieldset>
 

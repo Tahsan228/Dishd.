@@ -5,6 +5,7 @@ import { currentProfile } from "@/lib/market/auth-actions";
 import { OrderPanel } from "@/components/market/order-panel";
 import { MenuGrid } from "@/components/market/menu-grid";
 import { SiteHeader } from "@/components/market/site-header";
+import { cardAvailability } from "@/lib/market/payments";
 
 // Guest workstream (Codex) owns these three. They are stubs until then.
 // This file composes them and does not change.
@@ -127,7 +128,7 @@ export default async function KitchenPage({
                 kitchenId={kitchen.id}
                 slug={kitchen.slug}
                 items={orderable}
-                acceptsCard={kitchen.accepts_card}
+                cardUnavailableReason={cardAvailability(kitchen).reason}
                 signedIn={Boolean(profile)}
               />
             )}

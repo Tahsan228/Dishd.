@@ -7,6 +7,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import type { OrderStatus } from "@/lib/types";
 import { ACK_VERSION, ACKNOWLEDGMENTS } from "@/lib/market/order-consent";
 import { transitionError, type OrderActor } from "@/lib/market/order-lifecycle";
+import { paymentMethodError } from "@/lib/market/payments";
 
 export type PlaceOrderState = { error?: string } | null;
 
@@ -67,6 +68,20 @@ export async function placeOrder(
   }, 0);
 
   const paymentMethod = String(form.get("paymentMethod") ?? "cash") === "card" ? "card" : "cash";
+
+  // The disabled radio is a hint, not a control: a form post can name any
+  // method. Nothing in the app creates a Stripe session yet, so a card order
+  // would leave the buyer believing they had paid and the cook handing over
+  // food unpaid.
+  const { data: kitchenPayment } = await supabase
+    .from("kitchens")
+    .select("accepts_cash, accepts_card, stripe_onboarded")
+    .eq("id", kitchenId)
+    .maybeSingle();
+  if (!kitchenPayment) return { error: "That kitchen is no longer available." };
+
+  const paymentProblem = paymentMethodError(paymentMethod, kitchenPayment);
+  if (paymentProblem) return { error: paymentProblem };
 
   const { data: order, error } = await supabase
     .from("orders")
