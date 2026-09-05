@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import type { OrderStatus } from "@/lib/types";
 import { ACK_VERSION, ACKNOWLEDGMENTS } from "@/lib/market/order-consent";
+import { transitionError, type OrderActor } from "@/lib/market/order-lifecycle";
 
 export type PlaceOrderState = { error?: string } | null;
 
@@ -128,10 +129,17 @@ export async function placeOrder(
 }
 
 /**
- * Cook-side state machine: pending -> accepted -> ready -> completed.
+ * Advance an order. Cook: pending -> accepted -> ready -> completed.
+ * Buyer: cancel only, and only before the food has been made ready.
  *
  * Moving to 'completed' fires dishd_autolog_on_complete(), which writes the
  * verified log row. Accepting is what reveals the exact address to the buyer.
+ *
+ * A server action is reachable from the client with whatever arguments the
+ * caller likes, so this establishes who is asking and whether the move is legal
+ * before touching the row. Migration 0005 enforces the same rules in a trigger,
+ * which is the boundary that actually holds; this layer exists so an illegal
+ * move fails with a sentence a cook can read instead of a Postgres exception.
  */
 export async function advanceOrder(orderId: string, to: OrderStatus) {
   const supabase = await createServerClient();
@@ -140,13 +148,44 @@ export async function advanceOrder(orderId: string, to: OrderStatus) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, status, buyer_id, kitchen_id")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!order) return { error: "That order is no longer available." };
+
+  const { data: owned } = await supabase
+    .from("kitchens")
+    .select("id")
+    .eq("id", order.kitchen_id)
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  const actor: OrderActor | null = owned
+    ? "cook"
+    : order.buyer_id === user.id
+      ? "buyer"
+      : null;
+  if (!actor) return { error: "You are not a party to this order." };
+
+  const problem = transitionError(order.status as OrderStatus, to, actor);
+  if (problem) return { error: problem };
+
   const patch: Record<string, unknown> = { status: to };
   if (to === "accepted") patch.address_revealed_at = new Date().toISOString();
   if (to === "completed") patch.completed_at = new Date().toISOString();
 
-  // RLS restricts this to the buyer or the kitchen owner.
-  const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
+  // Re-assert the starting status so two taps in flight cannot double-advance.
+  const { data: updated, error } = await supabase
+    .from("orders")
+    .update(patch)
+    .eq("id", orderId)
+    .eq("status", order.status)
+    .select("id")
+    .maybeSingle();
   if (error) return { error: error.message };
+  if (!updated) return { error: "That order just changed. Refresh and try again." };
 
   revalidatePath("/cook");
   revalidatePath(`/order/${orderId}`);
