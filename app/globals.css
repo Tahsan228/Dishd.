@@ -1,26 +1,59 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ==========================================================================
+   Dishd design tokens.  FROZEN — do not edit without telling the other dev.
+   Tailwind v4 @theme: every token below becomes a utility automatically,
+   e.g. --color-forest  ->  bg-forest / text-forest / border-forest
+   ========================================================================== */
+@theme {
+  /* ground + brand */
+  --color-cream:        #FEF8F6;  /* app background, everywhere */
+  --color-forest:       #00372C;  /* primary: buttons, header, credibility panel */
+  --color-forest-deep:  #002620;  /* hover / pressed */
+  --color-forest-soft:  #E6EEEB;  /* tinted fills, selected states */
+
+  /* earned status — the credibility ladder */
+  --color-brass:        #B8873B;  /* badge fills, tier marks, Chain of Trust seal */
+  --color-brass-ink:    #7A5A22;  /* brass as SMALL TEXT on cream (contrast-safe) */
+
+  /* states */
+  --color-clay:         #B4432F;  /* mismatch, ban tombstone, incidents */
+  --color-amber:        #C87A2C;  /* pending, awaiting review */
+
+  /* neutrals — tinted, never pure grey */
+  --color-ink:          #16241F;  /* body text */
+  --color-ink-muted:    #5B6B64;  /* secondary text */
+  --color-line:         #E8DCD6;  /* hairlines, borders */
+  --color-surface:      #FFFFFF;  /* raised cards on the cream ground */
+  --color-surface-sunk: #F7EDE8;  /* inset areas, image placeholders */
+
+  /* type — wired to next/font in app/layout.tsx */
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans:    var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Committed light palette. Declared so browsers don't auto-invert form controls. */
+:root { color-scheme: light; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Display face carries the wordmark's editorial character. */
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.015em;
+}
+
+/* Scores and stats must not jitter as digits change. */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* The Business Record prints as a one-page document. */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
 }
