@@ -21,22 +21,47 @@ migrations, and dependency manifests are unchanged.
 - Kitchen scores preserve all nine formula terms. If penalties take the raw total
   below zero, a clearly labelled floor adjustment reconciles the breakdown to zero.
 
-## Host-owned integration gaps
+## Host integration (checked against main at 5dae51a)
 
-- No revenue counter or clean-operation date/history query is defined in the
-  checked-in contract. The Business Record labels both metrics unavailable; it
-  does not invent revenue, treat account age as clean operation, or sum private
-  orders. A read-only counter/view contract is needed to complete those metrics.
-- No review-photo bucket/path policy is checked in. The composer supports an
-  optional public HTTPS image URL. File upload needs the host's bucket contract.
-- The existing logs RLS policy allows owners to update their whole row, including
-  verification/linkage columns. The social server action only writes rating,
-  body, photo URL, and sourcing answer, and checks the completed order. Protecting
-  verification against direct database API writes still needs a host-owned policy
-  or trigger change.
+- Migration 0004's `revenue_cents` and `first_completed_at` are now used by the
+  Business Record. Full operating months start at the first completed order.
+  Clean standing follows the documented zero-upheld-flags / zero-open-incidents
+  rule and is described on the record; account age is never substituted.
+- Social pages now reuse the host `SiteHeader`. `/diary` redirects to the current
+  buyer profile, or `/signin?next=%2Fdiary`. Appreciation sign-in also returns to
+  its log permalink.
+- The `photos/reviews/<logId>.<ext>` contract is acknowledged. HTTPS photo links
+  remain supported; file upload is the next integration checkpoint.
+- The host's provenance-update trigger is compatible with the review action,
+  which only writes rating, body, photo URL, and sourcing answer after checking
+  the buyer and completed order.
+
+### One host-owned placement remains
+
+The completed-order screen currently says the meal is in the diary but has no
+link to rate it. This guest-owned server component is ready to drop into its
+completed state (no additional queries or props are needed in the host page):
+
+```tsx
+import { OrderReviewLink } from "@/components/social/order-review-link";
+
+{order.status === "completed" && <OrderReviewLink orderId={id} />}
+```
+
+`OrderReviewLink` resolves the trigger-created log for the signed-in buyer. It
+does not create a log or expose another buyer's entry. A `/diary` link in the
+marketplace header would also make the personal diary easier to discover.
 
 ## Validation
 
+- Restored the existing lockfile dependencies in the isolated guest checkout,
+  without modifying dependency manifests. No host process or dev server touched.
+- Actual Vitest: 68 tests pass, including the host's 10 receipt tests and the new
+  Business Record fixtures. Full application `tsc --noEmit` passes. Social lint
+  passed before the latest navigation/record additions; it will be rerun.
+- Live database and browser flow verification still requires configured test
+  services. No seed, migration, or verification script has been run against the
+  host's database from this checkout.
 - `lib/social/credibility.test.ts`: formula arithmetic, every tier boundary,
   penalties, zero-floor reconciliation, tenure, decimal ratings, all badge rules.
 - `lib/social/review-validation.test.ts`: rating bounds, explicit sourcing answer,

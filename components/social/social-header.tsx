@@ -1,5 +1,6 @@
 import Link from "next/link";
+import { SiteHeader } from "@/components/market/site-header";
 
-export function SocialHeader() {
-  return <header className="no-print border-b border-line bg-cream"><div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4"><Link href="/" className="font-display text-3xl text-forest">dishd<span className="text-brass">.</span></Link><Link href="/" className="inline-flex min-h-11 items-center text-sm font-medium text-forest hover:underline">Find a home kitchen</Link></div></header>;
+export async function SocialHeader() {
+  return <div className="no-print"><SiteHeader /><nav aria-label="Meal diary navigation" className="mx-auto flex max-w-5xl items-center gap-5 border-b border-line px-4 text-sm text-forest"><Link href="/" className="inline-flex min-h-11 items-center hover:underline">Explore kitchens</Link><Link href="/diary" className="inline-flex min-h-11 items-center font-medium hover:underline">My meal diary</Link></nav></div>;
 }

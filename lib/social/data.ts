@@ -24,14 +24,14 @@ export function safeImageUrl(value: string | null): string | undefined {
   if (!value) return undefined;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" ? url.href : undefined;
+    return url.protocol === "https:" && !url.username && !url.password ? url.href : undefined;
   } catch {
     return undefined;
   }
 }
 
 export function formatNumber(value: number): string {
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value === 0 ? 0 : value);
 }
 
 export function formatDate(value: string): string {
