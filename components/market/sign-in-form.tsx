@@ -35,7 +35,9 @@ export function SignInForm({ next }: { next: string }) {
   }
 
   return (
-    <div className="mt-6">
+    <form ref={formRef} action={action} className="mt-6">
+      <input type="hidden" name="next" value={next} />
+
       <div className="stagger space-y-2">
         <p className="text-xs font-medium text-ink">Sign in as a demo account</p>
         {DEMO.map((d) => (
@@ -60,16 +62,13 @@ export function SignInForm({ next }: { next: string }) {
           Or sign in with an email and password
         </summary>
 
-        <form ref={formRef} action={action} className="space-y-3 border-t border-line p-4">
-          <input type="hidden" name="next" value={next} />
-
+        <div className="space-y-3 border-t border-line p-4">
           <label className="block">
             <span className="text-xs font-medium text-ink">Email</span>
             <input
               ref={emailRef}
               name="email"
               type="email"
-              required
               autoComplete="username"
               defaultValue={DEMO[0].email}
               className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-forest"
@@ -82,7 +81,6 @@ export function SignInForm({ next }: { next: string }) {
               ref={passwordRef}
               name="password"
               type="password"
-              required
               autoComplete="current-password"
               defaultValue={DEMO_PASSWORD}
               className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-forest"
@@ -96,7 +94,7 @@ export function SignInForm({ next }: { next: string }) {
           >
             {pending ? "Signing in…" : "Sign in"}
           </button>
-        </form>
+        </div>
       </details>
 
       {state?.error && (
@@ -113,6 +111,6 @@ export function SignInForm({ next }: { next: string }) {
       <p className="mt-4 text-center text-[11px] text-ink-muted">
         These are seeded demo accounts, not real people.
       </p>
-    </div>
+    </form>
   );
 }
