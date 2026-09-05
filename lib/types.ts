@@ -19,7 +19,8 @@
 export type PermitStatus = "none" | "claimed" | "verified";
 export type KitchenStatus = "draft" | "active" | "suspended" | "banned";
 export type MeatType = "beef" | "lamb" | "chicken" | "goat" | "other" | "none";
-export type BatchMatchStatus = "verified" | "mismatch" | "unreadable";
+/** pending = deterministic checks passed, awaiting human review of the image. */
+export type BatchMatchStatus = "pending" | "verified" | "mismatch" | "unreadable";
 export type OrderStatus =
   | "pending"
   | "accepted"
@@ -150,6 +151,10 @@ export type SourcingBatch = {
   match_status: BatchMatchStatus;
   mismatch_reasons: string[];
   backs_items_until: string | null;
+  declared_meat_types: MeatType[];
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  review_note: string | null;
   created_at: string;
 };
 
