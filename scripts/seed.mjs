@@ -180,15 +180,20 @@ async function wipe() {
 }
 
 async function makeUser({ email, name, h, city }) {
+  // Migration 0006 puts a trigger on auth.users that creates the profile from
+  // this metadata, so the row already exists by the time createUser returns.
+  // Upsert rather than insert, and pin the handle we want here rather than
+  // letting the trigger derive one from the email.
   const { data, error } = await db.auth.admin.createUser({
     email, password: "dishd-demo-1234", email_confirm: true,
+    user_metadata: { handle: h, display_name: name, city: city ?? "Fremont, CA" },
   });
   if (error) throw new Error(`${email}: ${error.message}`);
   const id = data.user.id;
-  const { error: pe } = await db.from("profiles").insert({
+  const { error: pe } = await db.from("profiles").upsert({
     id, handle: h, display_name: name, city: city ?? "Fremont, CA",
     bio: null, avatar_url: null,
-  });
+  }, { onConflict: "id" });
   if (pe) throw new Error(`profile ${h}: ${pe.message}`);
   return id;
 }

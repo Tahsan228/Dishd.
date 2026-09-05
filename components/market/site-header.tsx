@@ -39,7 +39,15 @@ export async function SiteHeader() {
         <nav className="flex items-center gap-2 text-sm">
           {profile ? (
             <>
-              <span className="hidden text-ink-muted sm:inline">{profile.display_name}</span>
+              <span className="hidden text-ink-muted md:inline">{profile.display_name}</span>
+              {/* The personal diary is the social half of the product; without
+                  a link here it was only reachable from an order. */}
+              <Link
+                href="/diary"
+                className="rounded-full px-3 py-2 text-ink-muted hover:text-forest"
+              >
+                Diary
+              </Link>
               <Link
                 href="/cook"
                 className="rounded-full bg-forest px-4 py-2 font-medium text-cream hover:bg-forest-deep"

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MapPin, Clock, CheckCircle2, ChefHat, Lock } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/market/site-header";
+import { OrderReviewLink } from "@/components/social/order-review-link";
 import { formatCents } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/types";
 
@@ -174,10 +175,17 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           </p>
         )}
         {order.status === "completed" && (
-          <p className="mt-4 flex items-center gap-2 text-xs text-ink-muted">
-            <ChefHat className="h-3.5 w-3.5" aria-hidden />
-            Collected. This meal is now in your diary.
-          </p>
+          <div className="mt-4">
+            <p className="flex items-center gap-2 text-xs text-ink-muted">
+              <ChefHat className="h-3.5 w-3.5" aria-hidden />
+              Collected. This meal is now in your diary.
+            </p>
+            {/* The completing trigger already wrote the verified log; this
+                resolves it so the buyer can actually rate the meal. */}
+            <div className="mt-3">
+              <OrderReviewLink orderId={id} />
+            </div>
+          </div>
         )}
       </main>
     </>
