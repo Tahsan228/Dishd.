@@ -5,24 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import type { OrderStatus } from "@/lib/types";
-
-/** Bump when the acknowledgment wording changes. Recorded against every consent. */
-export const ACK_VERSION = "2026-09-05.1";
-
-export const ACKNOWLEDGMENTS = [
-  {
-    key: "home_kitchen",
-    text: "I understand this food is prepared in a private home kitchen that is not routinely inspected by a health department.",
-  },
-  {
-    key: "allergens",
-    text: "I have read the allergen information and accept the risk of cross-contamination in a home kitchen.",
-  },
-  {
-    key: "halal",
-    text: "I understand Dishd does not certify halal status; sourcing claims are made by the cook.",
-  },
-] as const;
+import { ACK_VERSION, ACKNOWLEDGMENTS } from "@/lib/market/order-consent";
 
 export type PlaceOrderState = { error?: string } | null;
 
@@ -170,7 +153,3 @@ export async function advanceOrder(orderId: string, to: OrderStatus) {
   return { ok: true };
 }
 
-export async function acceptOrder(id: string) { "use server"; return advanceOrder(id, "accepted"); }
-export async function markReady(id: string)   { "use server"; return advanceOrder(id, "ready"); }
-export async function completeOrder(id: string){ "use server"; return advanceOrder(id, "completed"); }
-export async function declineOrder(id: string) { "use server"; return advanceOrder(id, "declined"); }

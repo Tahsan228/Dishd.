@@ -133,12 +133,12 @@ export async function MenuGrid({ kitchenId }: { kitchenId: string }) {
               <Provenance batch={item.sourcing_batches} />
             )}
 
-            <button
-              type="button"
-              className="mt-4 w-full rounded-full bg-forest px-4 py-2.5 text-sm font-medium text-cream transition hover:bg-forest-deep"
+            <a
+              href="#order"
+              className="mt-4 block w-full rounded-full border border-forest/25 px-4 py-2.5 text-center text-sm font-medium text-forest hover:bg-forest-soft"
             >
               Add to order
-            </button>
+            </a>
           </div>
         </article>
       ))}

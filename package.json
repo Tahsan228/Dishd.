@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "check:env": "node --env-file-if-exists=.env.local scripts/check-env.mjs",
-    "seed": "node --env-file-if-exists=.env.local scripts/seed.mjs"
+    "seed": "node --env-file-if-exists=.env.local scripts/seed.mjs",
+    "verify": "node --env-file-if-exists=.env.local scripts/verify-flow.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

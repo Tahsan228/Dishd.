@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { Minus, Plus, ShoppingBag, TriangleAlert } from "lucide-react";
-import { placeOrder, ACKNOWLEDGMENTS, type PlaceOrderState } from "@/lib/market/order-actions";
+import { placeOrder, type PlaceOrderState } from "@/lib/market/order-actions";
+import { ACKNOWLEDGMENTS } from "@/lib/market/order-consent";
 import { formatCents } from "@/lib/utils";
 
 export type OrderableItem = {
@@ -35,7 +36,7 @@ export function OrderPanel({
   const count = Object.values(qty).reduce((a, b) => a + b, 0);
 
   return (
-    <form action={action} className="rounded-xl border border-line bg-surface p-4">
+    <form id="order" action={action} className="rounded-xl border border-line bg-surface p-4 scroll-mt-24">
       <input type="hidden" name="kitchenId" value={kitchenId} />
       <input type="hidden" name="slug" value={slug} />
 
