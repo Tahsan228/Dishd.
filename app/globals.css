@@ -155,7 +155,21 @@ details > summary { transition: background-color .18s ease; }
 details .chev { transition: transform .22s cubic-bezier(.22,.61,.36,1); }
 details[open] .chev { transform: rotate(180deg); }
 
-button, a { transition: background-color .18s ease, color .18s ease, border-color .18s ease, opacity .18s ease; }
+button, a { transition: background-color .18s ease, color .18s ease, border-color .18s ease, opacity .18s ease, transform .12s ease; }
+
+/* A press should be felt, not just seen. Small enough not to shift layout,
+   and skipped for anything disabled so a dead control stays dead. */
+button:not(:disabled):active,
+[role="tab"]:not(:disabled):active,
+a:active { transform: translateY(1px) scale(.995); }
+
+/* Panels that appear in place — a report form, a composer — arrive rather than
+   snap, so the eye follows the change instead of hunting for it. */
+@keyframes expand {
+  from { opacity: 0; transform: translateY(-4px); clip-path: inset(0 0 100% 0); }
+  to   { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+}
+.expand { animation: expand .28s cubic-bezier(.22,.61,.36,1) both; }
 
 /* Respect the user's setting. Non-negotiable. */
 @media (prefers-reduced-motion: reduce) {
@@ -167,4 +181,7 @@ button, a { transition: background-color .18s ease, color .18s ease, border-colo
   }
   .lift:hover { transform: none; }
   .lift:hover img { transform: none; }
+  button:not(:disabled):active,
+  [role="tab"]:not(:disabled):active,
+  a:active { transform: none; }
 }

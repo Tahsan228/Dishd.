@@ -33,3 +33,38 @@ Complete the order-to-review recovery path and advanced review composer, then re
 Active agent owns the whole app; old guest/frozen-directory restrictions are retired. Main is the shared continuation branch. Commit/push about every ten minutes while active. Use DESIGN.md for the design contract.
 
 Third checkpoint: migrations 0009 and 0010 add the private reward ledger, review/pickup/purchase awards, moderated promotion claims, community posts and reporting, single-use credits, and transactional checkout. Checkout calls a service-only RPC after authenticating the buyer; direct client order/item inserts are now prohibited. Credit discounts reduce the actual cash/Stripe total and return on cancellation. Consent version 2026-09-05.2 requires quality/allergen/halal standards. Apply 0008-0010 together before using these changes. Isolated PostgreSQL test: npm run test:db, 26 checks pass; no live database was touched. Interfaces for community, rewards and moderation are the next checkpoint.
+
+## Fourth checkpoint (Claude)
+
+Built the interfaces the third checkpoint left: `/rewards` and `/community`,
+plus the reporting path.
+
+- `/rewards` renders the 0009 ledger: balance, lifetime earned, progress to the
+  next credit, redemption, available credits, the earning table, and video
+  mission submission. `EARN_RULES` mirrors the triggers rather than restating
+  them, so the page cannot promise points the database will not award.
+- `/community` separates verified reviews from business posts, with search,
+  cuisine facets and four sorts. Rankings refuse thin evidence: kitchen of the
+  week needs 3+ verified reviews in seven days and no upheld flags, and
+  "confirmed problems" lists only upheld flags, suspensions and bans — never a
+  low rating.
+- `ReportDialog` on the completed-order page, tied to the order so a reviewer
+  can see which pickup is described.
+- Market moved to Bergen County NJ / New York. `lib/market/jurisdictions.ts`
+  names the permit per state, because MEHKO is Californian and telling an NJ
+  cook to get one sends them after a licence that does not exist there.
+
+Two defects fixed on the way: the report action wrote `detail`/`user` where the
+schema has `details` and no such target_type (every report would have failed),
+and the checkout reward selector rendered literal "?" where a separator and
+minus sign belonged.
+
+### Still open
+
+- **Migrations 0005 and 0008-0010 are not applied to the live database.** I
+  verified directly: `community_posts`, `reward_ledger` and `dishd_place_order`
+  all 404. Checkout calls that RPC, so ordering is broken against the live
+  project until they are run. Apply 0005, then 0008, 0009, 0010, then re-seed.
+- Reviewer queue: `dishd_review_reward_claim` and flag disposition are
+  service-role only, with no moderator UI. Claims and reports will sit pending.
+- Stripe Connect: card money lands in the platform account, not the cook's.

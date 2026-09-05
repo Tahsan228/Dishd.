@@ -6,6 +6,7 @@ import { settleFromCheckout } from "@/lib/market/payment-settlement";
 import { SiteHeader } from "@/components/market/site-header";
 import { OrderReviewLink } from "@/components/social/order-review-link";
 import { ClearCartOnOrder } from "@/components/market/clear-cart-on-order";
+import { ReportDialog } from "@/components/social/report-dialog";
 import { OrderLiveRefresh } from "@/components/market/order-live-refresh";
 import { formatCents } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/types";
@@ -204,6 +205,14 @@ export default async function OrderPage({
             <div className="mt-3">
               <OrderReviewLink orderId={id} />
             </div>
+
+            {/* Tied to this order, which is what makes the report worth acting
+                on: a reviewer can see exactly which pickup is being described. */}
+            <ReportDialog
+              kitchenId={order.kitchen_id}
+              kitchenName={kitchen.name}
+              orderId={order.id}
+            />
           </div>
         )}
       </main>

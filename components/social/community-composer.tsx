@@ -50,7 +50,7 @@ export function CommunityComposer({
   }
 
   return (
-    <form action={action} className="rounded-2xl border border-forest/30 bg-surface p-5">
+    <form action={action} className="expand rounded-2xl border border-forest/30 bg-surface p-5">
       <fieldset>
         <legend className="text-xs font-medium text-ink">Posting as</legend>
         <div className="mt-2 flex flex-wrap gap-2">
