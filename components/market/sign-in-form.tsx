@@ -1,76 +1,118 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { TriangleAlert } from "lucide-react";
+import { useActionState, useRef } from "react";
+import { TriangleAlert, ArrowRight } from "lucide-react";
 import { signIn } from "@/lib/market/auth-actions";
 
-/** Seeded demo accounts. Removing the seed removes the reason for this block. */
+/**
+ * Seeded demo accounts. Clicking one signs straight in rather than just
+ * filling the field — during a demo, a filled-but-unsubmitted form reads as
+ * broken.
+ */
 const DEMO = [
-  { email: "yusuf@dishd.test", label: "Yusuf — buyer" },
-  { email: "amina@dishd.test", label: "Amina — cook (Dishd Verified)" },
-  { email: "bilal@dishd.test", label: "Bilal — cook (new kitchen)" },
+  { email: "yusuf@dishd.test", name: "Yusuf Ali", role: "Buyer · Trusted Taster" },
+  { email: "amina@dishd.test", name: "Amina Yusuf", role: "Cook · Dishd Verified" },
+  { email: "bilal@dishd.test", name: "Bilal Ahmed", role: "Cook · brand new kitchen" },
 ];
+
+const DEMO_PASSWORD = "dishd-demo-1234";
 
 export function SignInForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState(signIn, null as { error?: string } | null);
-  const [email, setEmail] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * Both fields are uncontrolled, so setting .value and submitting in the same
+   * tick is deterministic — there is no React render to wait on and nothing to
+   * overwrite the value we just wrote.
+   */
+  function signInAs(demoEmail: string) {
+    if (emailRef.current) emailRef.current.value = demoEmail;
+    if (passwordRef.current) passwordRef.current.value = DEMO_PASSWORD;
+    formRef.current?.requestSubmit();
+  }
 
   return (
-    <form action={action} className="mt-6 space-y-3">
-      <input type="hidden" name="next" value={next} />
-
-      <label className="block">
-        <span className="text-xs font-medium text-ink">Email</span>
-        <input
-          name="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-forest"
-        />
-      </label>
-
-      <label className="block">
-        <span className="text-xs font-medium text-ink">Password</span>
-        <input
-          name="password"
-          type="password"
-          required
-          defaultValue="dishd-demo-1234"
-          className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-forest"
-        />
-      </label>
-
-      {state?.error && (
-        <p className="rise flex items-start gap-2 rounded-lg border border-clay/30 bg-clay/10 p-2.5 text-xs text-clay">
-          <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
-          {state.error}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-full bg-forest px-4 py-3 text-sm font-medium text-cream hover:bg-forest-deep disabled:opacity-60"
-      >
-        {pending ? "Signing in…" : "Sign in"}
-      </button>
-
-      <div className="stagger space-y-1.5 rounded-lg bg-surface-sunk p-3">
-        <p className="text-xs font-medium text-ink">Demo accounts</p>
+    <div className="mt-6">
+      <div className="stagger space-y-2">
+        <p className="text-xs font-medium text-ink">Sign in as a demo account</p>
         {DEMO.map((d) => (
           <button
             key={d.email}
             type="button"
-            onClick={() => setEmail(d.email)}
-            className="block w-full rounded-md px-2 py-1.5 text-left text-xs text-ink-muted hover:bg-forest-soft hover:text-forest"
+            disabled={pending}
+            onClick={() => signInAs(d.email)}
+            className="lift flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-left hover:border-forest/40 disabled:opacity-60"
           >
-            {d.label}
+            <span>
+              <span className="block text-sm font-medium text-ink">{d.name}</span>
+              <span className="block text-xs text-ink-muted">{d.role}</span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 text-forest" aria-hidden />
           </button>
         ))}
-        <p className="pt-1 text-[11px] text-ink-muted">Password is prefilled.</p>
       </div>
-    </form>
+
+      <details className="mt-6 rounded-xl border border-line bg-surface-sunk">
+        <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-ink">
+          Or sign in with an email and password
+        </summary>
+
+        <form ref={formRef} action={action} className="space-y-3 border-t border-line p-4">
+          <input type="hidden" name="next" value={next} />
+
+          <label className="block">
+            <span className="text-xs font-medium text-ink">Email</span>
+            <input
+              ref={emailRef}
+              name="email"
+              type="email"
+              required
+              autoComplete="username"
+              defaultValue={DEMO[0].email}
+              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-forest"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-medium text-ink">Password</span>
+            <input
+              ref={passwordRef}
+              name="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              defaultValue={DEMO_PASSWORD}
+              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm outline-none focus:border-forest"
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={pending}
+            className="w-full rounded-full bg-forest px-4 py-3 text-sm font-medium text-cream hover:bg-forest-deep disabled:opacity-60"
+          >
+            {pending ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+      </details>
+
+      {state?.error && (
+        <p className="rise mt-4 flex items-start gap-2 rounded-lg border border-clay/30 bg-clay/10 p-3 text-xs text-clay">
+          <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span>
+            {state.error === "Invalid login credentials"
+              ? "That email and password don't match a Dishd account. The demo accounts above sign in with one click."
+              : state.error}
+          </span>
+        </p>
+      )}
+
+      <p className="mt-4 text-center text-[11px] text-ink-muted">
+        These are seeded demo accounts, not real people.
+      </p>
+    </div>
   );
 }
