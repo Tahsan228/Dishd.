@@ -1,5 +1,7 @@
 # Dishd
 
+**Current workflow (2026-09-05):** one active agent owns the whole project; Codex and Claude alternate on latest main. The historical host/guest restrictions below are superseded by [AGENTS.md](AGENTS.md). Current work is in [HANDOFF.md](HANDOFF.md), and the visual contract is [DESIGN.md](DESIGN.md). Local preview: http://localhost:4173.
+
 A mobile-first PWA where halal home cooks sell pickup meals from their own kitchens, prove their meat sourcing with uploaded receipts, and build a public credibility record that travels with the business.
 
 Two mechanics carry the whole product. Understand these before writing any code:

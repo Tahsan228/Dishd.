@@ -6,6 +6,7 @@ import { CheckCircle2, Clock, TriangleAlert, Wand2, XCircle } from "lucide-react
 import { submitReceipt, type SubmitReceiptResult } from "@/lib/market/receipt-actions";
 import { MEAT_TYPES } from "@/lib/market/cook-onboarding";
 import { cn } from "@/lib/utils";
+import { receiptFileError, RECEIPT_ACCEPT } from "@/lib/market/upload-validation";
 
 const field =
   "mt-1 min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-forest focus-visible:ring-2 focus-visible:ring-forest/20";
@@ -50,10 +51,17 @@ export function ReceiptForm({
   function onSubmit(formEvent: React.FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
     const form = new FormData(formEvent.currentTarget);
+    const file = form.get("receipt");
+    const problem = receiptFileError(file instanceof File ? file : null);
+    if (problem) { setResult({ ok: false, status: "mismatch", checks: [], message: problem }); return; }
     start(async () => {
-      const r = await submitReceipt(kitchenId, form);
-      setResult(r);
-      if (r.ok) router.refresh();
+      try {
+        const r = await submitReceipt(kitchenId, form);
+        setResult(r);
+        if (r.ok) router.refresh();
+      } catch {
+        setResult({ ok: false, status: "mismatch", checks: [], message: "The receipt could not be submitted. Your details are still here. Check your connection and try a file under 8 MB." });
+      }
     });
   }
 
@@ -155,13 +163,12 @@ export function ReceiptForm({
         <input
           name="receipt"
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/avif,image/heic"
-          capture="environment"
+          accept={RECEIPT_ACCEPT}
           required
           className="mt-2 block w-full text-sm text-ink-muted file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-forest file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-cream hover:file:bg-forest-deep"
         />
         <span className="mt-1 block text-xs text-ink-muted">
-          Stored privately. Only you and a reviewer can open it.
+          Image or PDF, up to 8 MB. Stored privately for sourcing review.
         </span>
       </label>
 

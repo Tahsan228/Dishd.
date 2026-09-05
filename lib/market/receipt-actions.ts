@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createServerClient, createServiceClient } from "@/lib/supabase/server";
 import type { MeatType } from "@/lib/types";
+import { receiptFileError, RECEIPT_TYPES } from "@/lib/market/upload-validation";
 import {
   runLocalChecks,
   allPassed,
@@ -37,6 +38,13 @@ export async function submitReceipt(
   kitchenId: string,
   form: FormData,
 ): Promise<SubmitReceiptResult> {
+  try { return await submitReceiptChecked(kitchenId, form); }
+  catch {
+    return { ok: false, status: "mismatch", checks: [], message: "Receipt submissions are temporarily unavailable. Your declaration is still here; please try again shortly." };
+  }
+}
+
+async function submitReceiptChecked(kitchenId: string, form: FormData): Promise<SubmitReceiptResult> {
   const supabase = await createServerClient();
 
   const {
@@ -62,7 +70,10 @@ export async function submitReceipt(
     };
   }
 
-  const file = form.get("receipt") as File | null;
+  const candidate = form.get("receipt");
+  const file = candidate instanceof File ? candidate : null;
+  const fileProblem = receiptFileError(file);
+  if (fileProblem || !file) return { ok: false, status: "mismatch", checks: [], message: fileProblem ?? "Attach a receipt." };
   const declaration: ReceiptDeclaration = {
     halalSourceId: (form.get("halalSourceId") as string) || null,
     storeName: ((form.get("storeName") as string) ?? "").trim(),
@@ -83,23 +94,26 @@ export async function submitReceipt(
   const bytes = Buffer.from(await file.arrayBuffer());
   const sha256 = createHash("sha256").update(bytes).digest("hex");
 
-  const { data: sources } = await supabase
+  const { data: sources, error: sourcesError } = await supabase
     .from("halal_sources")
     .select("id, store_name")
     .eq("kitchen_id", kitchenId);
 
+  if (sourcesError) return { ok: false, status: "mismatch", checks: [], message: "Your registered suppliers could not be loaded. Please try again." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(declaration.purchaseDate) || !Number.isSafeInteger(declaration.totalCents) || declaration.totalCents <= 0) return { ok: false, status: "mismatch", checks: [], message: "Enter a valid purchase date and receipt total." };
   const checks = runLocalChecks(declaration, sources ?? [], new Date());
 
   // Duplicate detection needs to see across every kitchen, including ones this
   // cook cannot read — that is the whole point, so it runs as the service role.
   const admin = createServiceClient();
 
-  const { data: sameImage } = await admin
+  const { data: sameImage, error: imageCheckError } = await admin
     .from("sourcing_batches")
     .select("id, kitchen_id")
     .eq("image_sha256", sha256)
     .maybeSingle();
 
+  if (imageCheckError) return { ok: false, status: "mismatch", checks, message: "Duplicate checking is temporarily unavailable. No receipt was submitted." };
   checks.push({
     code: "not_duplicate_image",
     label: "Receipt image not used before",
@@ -111,13 +125,14 @@ export async function submitReceipt(
       : "First submission of this image",
   });
 
-  const { data: sameReceipt } = await admin
+  const { data: sameReceipt, error: receiptCheckError } = await admin
     .from("sourcing_batches")
     .select("id, kitchen_id, ocr_store")
     .eq("ocr_date", declaration.purchaseDate)
     .eq("ocr_total_cents", declaration.totalCents)
     .limit(20);
 
+  if (receiptCheckError) return { ok: false, status: "mismatch", checks, message: "Duplicate checking is temporarily unavailable. No receipt was submitted." };
   const collision = (sameReceipt ?? []).find(
     (b) => normaliseStore(b.ocr_store ?? "") === normaliseStore(declaration.storeName),
   );
@@ -136,7 +151,7 @@ export async function submitReceipt(
 
   // Upload the image regardless: a rejected receipt is still evidence.
   const path = `${kitchenId}/${sha256.slice(0, 16)}-${Date.now()}.${
-    file.type.split("/")[1] ?? "jpg"
+    RECEIPT_TYPES[file.type.toLowerCase() as keyof typeof RECEIPT_TYPES]
   }`;
 
   const { error: uploadError } = await admin.storage
@@ -174,6 +189,7 @@ export async function submitReceipt(
     .single();
 
   if (insertError) {
+    await admin.storage.from("receipts").remove([path]);
     // The unique indexes are the backstop if two submissions race each other.
     const duplicate = insertError.code === "23505";
     return {
@@ -187,6 +203,7 @@ export async function submitReceipt(
   }
 
   revalidatePath("/cook");
+  revalidatePath("/cook/start");
 
   return {
     ok: passed,
@@ -194,7 +211,7 @@ export async function submitReceipt(
     checks,
     batchId: batch?.id,
     message: passed
-      ? "Receipt sent for review. A reviewer will confirm it within 24 hours, and your sourcing badge goes live once they do."
+      ? "Receipt received and awaiting human review. Your sourcing badge will update when a reviewer confirms it."
       : "This receipt was rejected. Fix the issues below and submit again.",
   };
 }
