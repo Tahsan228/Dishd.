@@ -1,77 +1,29 @@
-# AGENTS.md — Dishd
+# Dishd — working agreement
 
-Read `README.md` first. It is the full contract; this file is the short version of the rules you must not break.
+The user requested a complete rebuild on 2026-09-05. This file supersedes the old Live Share / host / guest rules preserved in PRODUCT_BRIEF.md and lib/social/HANDOFF.md.
 
-Two agents work in this repo **at the same time, on the same machine, over VS Code Live Share.** Another agent (Claude) is editing other files in this same working tree *right now*. Files will change under you without warning — that is expected, not a bug. Do not "fix" or revert code you did not write.
+## One active agent, the whole project
 
-## You own exactly three directories
+Codex and Claude now work **in sequence**, alternating when the user switches tools or runs out of credits. The active agent owns the entire website. There are no frozen directories or separate workstreams. Do not start parallel agents or change another running coding session.
 
-```
-lib/social/          your logic
-app/(social)/        your routes
-components/social/   your components
-```
+Read README.md and HANDOFF.md at the start. PRODUCT_BRIEF.md preserves product requirements and the original scoring formulas; its old ownership and terminal restrictions are historical.
 
-Create files freely inside those. Do not create files outside them.
+## Small, testable milestones
 
-## Never do these
+- Keep a working local preview at http://localhost:4173. It must work without secrets or backend setup in demo mode.
+- Build one coherent milestone, verify it, give the user a short testing checklist, and pause for feedback before the next milestone.
+- The user should always be able to run npm install, then npm run dev. scripts/start-preview.ps1 also supports the existing VS Code runtime on Windows when Node is not installed.
+- Keep clearly labelled sample kitchens and simulated flows separate from real transactions. Never claim a demo order, receipt, review, or payment is verified by a live service.
+- Preserve the cream / forest / brass palette. Aim for editorial food discovery plus social meal diaries: Letterboxd meets Uber Eats. Responsive at 390px. Accessible controls and reduced-motion support.
 
-1. **Never edit files outside your three directories.** Especially not `lib/types.ts`, `lib/utils.ts`, `lib/supabase/`, `lib/market/`, `app/(market)/`, `app/layout.tsx`, `app/globals.css`, `components/ui/`, `components/market/`, or anything in `supabase/`. You may *import* from them; you may not change them.
-2. **Never write or edit a database migration.** If you need a column or an index, stop and ask the human to relay it to the host.
-3. **Never add, remove, or upgrade a dependency.** Everything you need is installed. If you genuinely need something new, ask — don't `npm install`.
-4. **Never create barrel/index re-export files.** Import from full paths.
-5. **Never run terminal commands.** You are the Live Share *guest*; the terminal is read-only and the dev server belongs to the host. Ask the human to run builds, tests, or migrations for you.
-6. **Never hardcode a hex colour.** The palette is Tailwind v4 `@theme` tokens in `globals.css` — use `bg-forest`, `text-ink-muted`, `bg-brass`, etc.
-7. **Never add dark mode.** The design is committed light.
-8. **Never display a kitchen's exact address.** It is RLS-gated on purpose and will return no rows for you. That is correct behaviour.
+## Commits and alternating agents
 
-## Build order
+- Working branch: codex/rebuild. GitHub repository: https://github.com/Tahsan228/Dishd.
+- Commit and push reviewable progress about every 10 minutes while actively working, and at the end of each milestone. Do not create empty commits just for the timer.
+- Update HANDOFF.md with each checkpoint: what works, what was checked, known gaps, preview command, and the next bounded task.
+- Claude: fetch and continue the latest pushed codex/rebuild commit. Do not restore the old application or restart from the old main branch. Codex follows the same rule when returning.
+- Preserve Git history. Do not force-push. Do not commit credentials, .env files, node_modules, preview logs, or build outputs.
 
-Work in this sequence. Each step is useful on its own, and the first two need no database, so start there and you will never be blocked.
+## Product rules to carry forward
 
-1. `lib/social/credibility.ts` — pure scoring functions. Formula and tier thresholds are specified exactly in README.md; implement them verbatim, since the demo narrates the numbers.
-2. `lib/social/badges.ts` — the 13 badge definitions, split into computed vs granted.
-3. `lib/social/credibility.test.ts` — vitest fixtures covering tier boundaries and the negative-penalty cases. Ask the human to run `npx vitest run`.
-4. `components/social/kitchen-credibility-panel.tsx` — replace the stub. The most important surface in the app.
-5. `components/social/kitchen-badge-shelf.tsx` — replace the stub.
-6. `components/social/review-feed.tsx` — replace the stub.
-7. `app/(social)/u/[handle]/page.tsx` — buyer profile: diary, stats, badges, rating histogram.
-8. Review composer + `app/(social)/log/[id]/page.tsx`.
-9. `app/(social)/k/[slug]/record/page.tsx` — the printable Business Record.
-
-## Three stubs already exist
-
-`components/social/*.tsx` contain placeholder implementations. **Replace their internals. Do not rename them, move them, or change their signatures** — a host-owned page imports them by exact path and will not be changed to accommodate you.
-
-Each takes exactly one prop:
-
-```ts
-export async function KitchenCredibilityPanel({ kitchenId }: { kitchenId: string })
-export async function KitchenBadgeShelf({ kitchenId }: { kitchenId: string })
-export async function ReviewFeed({ kitchenId }: { kitchenId: string })
-```
-
-They are React Server Components. Each does its own Supabase query. Do not add props or lift state into the page.
-
-## Conventions
-
-Server Components by default; `"use client"` only where interactivity requires it, nested inside a server wrapper. Tailwind utilities only. `kebab-case.tsx` filenames, named exports. `cn()` from `@/lib/utils`. Money in integer cents; ratings stored 0–10, displayed 0–5 stars. Every screen must work at 390 px wide.
-
-Read kitchen counters directly off the `kitchens` row — they are trigger-maintained.
-Buyer counters come from the `buyer_counters` **view** (one row per profile, keyed by
-`user_id`), not from `profiles`. Do not aggregate across `orders`, `logs`, or
-`log_likes` at render time; both sources exist so you don't have to.
-
-## If you are unsure
-
-Ask the human rather than guessing, particularly about anything touching the database schema, the scoring formula, or a shared file. A wrong guess in a shared file costs the other agent's work, not just yours.
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+Completed pickups create verified meal logs. Business credibility belongs to the kitchen. Keep the exact scoring formulas and badge thresholds from PRODUCT_BRIEF.md when implementing those milestones. Exact home addresses must never appear in public discovery, profiles, or feeds. Sourcing pending human review must not appear as verified. Money uses integer cents; stored ratings use 0–10 and display as 0–5 stars.

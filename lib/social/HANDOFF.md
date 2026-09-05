@@ -1,4 +1,6 @@
-# Social workstream handoff
+# Archived social workstream handoff
+
+**Historical only. The user requested a full rebuild. See ../../HANDOFF.md and ../../AGENTS.md for the current sequential, whole-project workflow. The implementation and host/guest instructions below no longer describe the active application.**
 
 All source changes are confined to `lib/social`, `components/social`, and
 `app/(social)`. The existing three kitchen component exports and their
