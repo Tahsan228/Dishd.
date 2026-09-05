@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { socialClient } from "@/lib/social/data";
-import { reviewSchema, type ReviewActionState } from "@/lib/social/review-validation";
+import {
+  photoExtension,
+  photoFileError,
+  reviewSchema,
+  type ReviewActionState,
+} from "@/lib/social/review-validation";
 
 export async function saveReview(logId: string, previous: ReviewActionState, form: FormData): Promise<ReviewActionState> {
   void previous;
@@ -23,7 +28,31 @@ export async function saveReview(logId: string, previous: ReviewActionState, for
   const { data: order, error: orderError } = await supabase.from("orders").select("id")
     .eq("id", log.order_id).eq("buyer_id", user.id).eq("kitchen_id", log.kitchen_id).eq("status", "completed").maybeSingle();
   if (orderError || !order) return { ok: false, message: "We couldn’t confirm the completed pickup. Please try again." };
-  const { rating, body, photo, sourcing } = parsed.data;
+  const { rating, body, sourcing } = parsed.data;
+
+  // A phone gives you a file, not a URL. Upload it under the buyer's own
+  // account so storage records them as the owner, then keep the public URL.
+  // The pasted-link path still works for anything already hosted.
+  let photo = parsed.data.photo;
+  const upload = form.get("photoFile");
+  if (upload instanceof File && upload.size > 0) {
+    const fileProblem = photoFileError(upload);
+    if (fileProblem) {
+      return { ok: false, message: "That photo didn’t work.", errors: { photo: fileProblem } };
+    }
+    const path = `reviews/${logId}.${photoExtension(upload.type)}`;
+    const { error: uploadError } = await supabase.storage
+      .from("photos")
+      .upload(path, upload, { contentType: upload.type, upsert: true });
+    if (uploadError) {
+      return {
+        ok: false,
+        message: "Your review wasn’t saved.",
+        errors: { photo: "That photo couldn’t be uploaded. Try again, or leave it out." },
+      };
+    }
+    photo = supabase.storage.from("photos").getPublicUrl(path).data.publicUrl;
+  }
   // The trigger owns verification, order linkage, authorship and time. Never write them.
   const { data: saved, error } = await supabase.from("logs").update({
     rating_10: Number(rating), body: body || null, photo_url: photo || null,

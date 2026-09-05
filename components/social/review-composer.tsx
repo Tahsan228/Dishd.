@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import type { DiaryLog } from "@/lib/social/data";
 import { saveReview } from "@/lib/social/review-actions";
+import { PHOTO_ACCEPT } from "@/lib/social/review-validation";
 import { cn } from "@/lib/utils";
 
 const fieldClass = "mt-2 min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-base text-ink outline-none focus-visible:border-forest focus-visible:ring-2 focus-visible:ring-forest/20";
@@ -17,6 +18,7 @@ export function ReviewComposer({ log }: { log: DiaryLog }) {
     photo: log.photo_url ?? "",
     sourcing: log.sourcing_affirmed === null ? "" : log.sourcing_affirmed ? "yes" : "no",
   });
+  const [photoName, setPhotoName] = useState("");
   const prefix = `review-${log.id}`;
   return <section aria-label="Write your review" className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
     <p className="text-xs font-semibold uppercase tracking-widest text-brass-ink">Your meal, in your words</p>
@@ -37,9 +39,15 @@ export function ReviewComposer({ log }: { log: DiaryLog }) {
         <p id={`${prefix}-body-help`} className={cn("mt-1 text-xs", state.errors?.body ? "text-clay" : "text-ink-muted")}>{state.errors?.body ?? "Up to 3,000 characters. Keep home addresses and pickup codes private."}</p>
       </div>
       <div>
-        <label htmlFor={`${prefix}-photo`} className="text-sm font-medium">Meal photo link <span className="font-normal text-ink-muted">(optional)</span></label>
+        <span className="text-sm font-medium">Meal photo <span className="font-normal text-ink-muted">(optional)</span></span>
+        {/* A phone hands you a file, not a URL. `capture` opens the camera
+            straight away on mobile; the link field below still takes anything
+            already hosted. */}
+        <input id={`${prefix}-photo-file`} name="photoFile" type="file" accept={PHOTO_ACCEPT} capture="environment" disabled={pending} onChange={(event) => setPhotoName(event.target.files?.[0]?.name ?? "")} aria-describedby={`${prefix}-photo-help`} className="mt-2 block w-full text-sm text-ink-muted file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-forest file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-cream hover:file:bg-forest-deep" />
+        {photoName && <p className="mt-1 text-xs text-forest">Attached: {photoName}</p>}
+        <label htmlFor={`${prefix}-photo`} className="mt-3 block text-xs text-ink-muted">Or paste a link to a photo you have already uploaded</label>
         <input id={`${prefix}-photo`} name="photo" type="url" disabled={pending} maxLength={2048} value={draft.photo} onChange={(event) => setDraft({ ...draft, photo: event.target.value })} placeholder="https://…" className={fieldClass} aria-invalid={!!state.errors?.photo} aria-describedby={`${prefix}-photo-help`} />
-        <p id={`${prefix}-photo-help`} className={cn("mt-1 text-xs", state.errors?.photo ? "text-clay" : "text-ink-muted")}>{state.errors?.photo ?? "Use a public HTTPS image link. Leave blank to remove a photo."}</p>
+        <p id={`${prefix}-photo-help`} className={cn("mt-1 text-xs", state.errors?.photo ? "text-clay" : "text-ink-muted")}>{state.errors?.photo ?? "Choosing a photo replaces the link. Leave both blank to remove a photo."}</p>
       </div>
       <div className="rounded-xl bg-forest-soft p-4">
         <label htmlFor={`${prefix}-sourcing`} className="block text-sm font-medium leading-relaxed text-forest">Did the packaging and quality match the cook’s sourcing claim?</label>
