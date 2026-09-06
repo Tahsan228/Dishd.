@@ -49,24 +49,37 @@ export function Checkout({
   const [tip, setTip] = useState('0');
   const tipCents = parseTipCents(tip);
 
-  // What this kitchen currently offers. Read from the server rather than from
+  // What this kitchen currently offers, read from the server rather than from
   // the cart, which may have been sitting in this browser for days.
-  const [terms, setTerms] = useState<KitchenTerms | null>(null);
-  const [when, setWhen] = useState<'asap' | 'later'>('asap');
-  const [slot, setSlot] = useState('');
-  const [priority, setPriority] = useState(false);
-
+  //
+  // Both the terms and the choices made against them are stored with the
+  // kitchen they belong to and derived during render — the same shape the
+  // consent state above uses, and for the same reason: switching carts must
+  // not leave the previous kitchen's offer on screen, and deriving it drops
+  // the stale value without an effect having to reset anything.
   const kitchenId = cart?.kitchenId ?? '';
+  const [termsState, setTermsState] = useState<{ kitchenId: string; terms: KitchenTerms | null }>(
+    { kitchenId: '', terms: null },
+  );
+  const terms = termsState.kitchenId === kitchenId ? termsState.terms : null;
+
+  type PickupChoice = { kitchenId: string; when: 'asap' | 'later'; slot: string; priority: boolean };
+  const blankChoice: PickupChoice = { kitchenId, when: 'asap', slot: '', priority: false };
+  const [choiceState, setChoiceState] = useState<PickupChoice>({ ...blankChoice, kitchenId: '' });
+  const choice = choiceState.kitchenId === kitchenId ? choiceState : blankChoice;
+  const setChoice = (patch: Partial<PickupChoice>) =>
+    setChoiceState({ ...choice, kitchenId, ...patch });
+
   useEffect(() => {
-    if (!kitchenId) { setTerms(null); return; }
+    if (!kitchenId) return;
     let current = true;
-    // Switching kitchens must not leave the previous kitchen's offer on screen,
-    // so every choice that depends on the terms resets with them.
-    setTerms(null); setWhen('asap'); setSlot(''); setPriority(false);
-    loadKitchenTerms(kitchenId).then((next) => { if (current) setTerms(next); });
+    loadKitchenTerms(kitchenId).then((next) => {
+      if (current) setTermsState({ kitchenId, terms: next });
+    });
     return () => { current = false; };
   }, [kitchenId]);
 
+  const { when, slot, priority } = choice;
   const scheduling = when === 'later';
   const bounds = scheduleBounds(new Date());
   const slotAt = scheduling && slot ? new Date(slot) : null;
@@ -174,7 +187,7 @@ export function Checkout({
                   name="pickupWhen"
                   value="asap"
                   checked={!scheduling}
-                  onChange={() => setWhen("asap")}
+                  onChange={() => setChoice({ when: 'asap', slot: '' })}
                   className="mt-0.5 accent-[var(--color-forest)]"
                 />
                 <span>
@@ -192,7 +205,7 @@ export function Checkout({
                     name="pickupWhen"
                     value="later"
                     checked={scheduling}
-                    onChange={() => setWhen("later")}
+                    onChange={() => setChoice({ when: 'later' })}
                     className="mt-0.5 accent-[var(--color-forest)]"
                   />
                   <span>
@@ -214,7 +227,7 @@ export function Checkout({
                   id="pickup-slot"
                   type="datetime-local"
                   value={slot}
-                  onChange={(e) => setSlot(e.target.value)}
+                  onChange={(e) => setChoice({ slot: e.target.value })}
                   min={toLocalInputValue(bounds.earliest)}
                   max={toLocalInputValue(bounds.latest)}
                   step={SCHEDULE_STEP_MINUTES * 60}
@@ -339,7 +352,7 @@ export function Checkout({
                   type="checkbox"
                   name="priority"
                   checked={priority}
-                  onChange={(e) => setPriority(e.target.checked)}
+                  onChange={(e) => setChoice({ priority: e.target.checked })}
                   className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-forest)]"
                 />
                 <span>

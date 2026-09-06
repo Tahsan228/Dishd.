@@ -1,17 +1,18 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Clock, CheckCircle2, ChefHat, Lock, ArrowLeft } from "lucide-react";
+import { MapPin, Clock, CheckCircle2, ChefHat, Lock, ArrowLeft, CalendarClock, Zap } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { settleFromCheckout } from "@/lib/market/payment-settlement";
 import { SiteHeader } from "@/components/market/site-header";
 import { OrderReviewLink } from "@/components/social/order-review-link";
 import { ClearCartOnOrder } from "@/components/market/clear-cart-on-order";
 import { ReportDialog } from "@/components/social/report-dialog";
-import { OrderLiveRefresh } from "@/components/market/order-live-refresh";
+import { OrderNotifications } from "@/components/market/order-notifications";
 import { OrderChat } from "@/components/market/order-chat";
 import { loadOrderMessages } from "@/lib/market/chat-actions";
 import { DemoAd } from "@/components/market/demo-ad";
 import { formatCents } from "@/lib/utils";
+import { formatCountdown, formatPickupMoment } from "@/lib/market/order-timing";
 import type { OrderStatus } from "@/lib/types";
 
 const STEPS: { key: OrderStatus; label: string; note: string }[] = [
@@ -69,6 +70,17 @@ export default async function OrderPage({
   const activeIndex = STEPS.findIndex((s) => s.key === order.status);
   const cancelled = order.status === "cancelled" || order.status === "declined";
 
+  const now = new Date();
+  const scheduledFor = order.scheduled_for ? new Date(order.scheduled_for) : null;
+  const readyEstimate = order.ready_estimate_at ? new Date(order.ready_estimate_at) : null;
+  const priorityCents = Number(order.priority_fee_cents ?? 0);
+  // Only worth showing while the food is still coming. After collection the
+  // estimate is a historical guess, and repeating it reads as a mistake.
+  const showEstimate =
+    !cancelled &&
+    order.status !== "completed" &&
+    Boolean(readyEstimate ?? scheduledFor);
+
   // The thread. RLS already limits it to the two parties, so a viewer who is
   // neither simply gets nothing back rather than a special case here.
   const {
@@ -84,7 +96,6 @@ export default async function OrderPage({
   return (
     <>
       <SiteHeader />
-      <OrderLiveRefresh active={!cancelled && order.status !== "completed"} />
       <ClearCartOnOrder orderId={order.id} kitchenId={order.kitchen_id} />
       <main className="mx-auto w-full max-w-2xl px-4 pb-20 pt-8">
         <Link
@@ -103,6 +114,27 @@ export default async function OrderPage({
         <h1 className="mt-1 font-display text-3xl text-forest">
           {cancelled ? "Order cancelled" : STEPS[Math.max(activeIndex, 0)].label}
         </h1>
+
+        {/* A booking that has not been accepted yet says so plainly. Otherwise
+            this page would read "waiting for the cook to confirm" for three
+            days, which is alarming rather than informative. */}
+        {!cancelled && scheduledFor && order.status === "pending" && (
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+            <CalendarClock className="h-4 w-4 shrink-0 text-forest" aria-hidden />
+            <span>
+              Scheduled for{" "}
+              <span className="font-medium text-ink">{formatPickupMoment(scheduledFor, now)}</span>{" "}
+              &middot; {formatCountdown(scheduledFor, now)}
+            </span>
+          </p>
+        )}
+
+        {priorityCents > 0 && (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brass/15 px-3 py-1 text-xs font-medium text-brass-ink">
+            <Zap className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            Priority order &middot; {formatCents(priorityCents)}
+          </p>
+        )}
 
         {!cancelled && (
           <ol className="stagger mt-6 space-y-2">
@@ -137,6 +169,29 @@ export default async function OrderPage({
           </ol>
         )}
 
+        {showEstimate && (
+          <section className="mt-6 rounded-2xl border border-line bg-surface p-4">
+            <h2 className="flex items-center gap-2 text-sm font-medium text-ink">
+              <Clock className="h-4 w-4 shrink-0 text-forest" aria-hidden />
+              {scheduledFor ? "Ready for your pickup time" : "Ready by about"}
+            </h2>
+            <p className="tabular mt-1 font-display text-2xl text-forest">
+              {formatPickupMoment((readyEstimate ?? scheduledFor)!, now)}
+            </p>
+            <p className="mt-1 text-sm text-ink-muted">
+              {formatCountdown((readyEstimate ?? scheduledFor)!, now)}
+              {order.prep_minutes ? ` · ${kitchen.name} cooks this in about ${order.prep_minutes} minutes` : ""}
+            </p>
+            {/* The cook typed this number about their own kitchen. Saying so is
+                the difference between an estimate and a promise Dishd cannot
+                keep — and the cook can revise it, which is the point. */}
+            <p className="mt-3 text-[11px] leading-relaxed text-ink-muted">
+              This is {kitchen.name}&apos;s own estimate, not a guarantee from Dishd.
+              They can change it while they cook, and you will see it here.
+            </p>
+          </section>
+        )}
+
         {/* The pickup code is what the cook checks to complete the order — it is
             what makes the resulting log a verified one. */}
         {(order.status === "accepted" || order.status === "ready") && (
@@ -150,6 +205,23 @@ export default async function OrderPage({
           </div>
         )}
 
+        {/* Alerts belong to the person waiting for food. A cook watching their
+            own kitchen has the dashboard for that, and would only be told that
+            "the kitchen" had updated something they did themselves. */}
+        {isBuyer && (
+          <OrderNotifications
+            orderId={order.id}
+            kitchenName={kitchen.name}
+            status={order.status as OrderStatus}
+            active={!cancelled && order.status !== "completed"}
+            latestMessageId={messages.length ? messages[messages.length - 1].id : null}
+            latestMessageFromOther={
+              messages.length ? messages[messages.length - 1].sender_id !== viewer?.id : false
+            }
+            readyEstimate={order.ready_estimate_at ?? null}
+          />
+        )}
+
         {viewer && (
           <OrderChat
             orderId={order.id}
@@ -157,6 +229,9 @@ export default async function OrderPage({
             otherName={kitchen.name}
             initialMessages={messages}
             live={!cancelled && order.status !== "completed"}
+            /* Exactly one timer per page: the alerts panel already refreshes
+               for the buyer, so the thread only polls on the cook's view. */
+            poll={!isBuyer}
           />
         )}
 
@@ -207,6 +282,7 @@ export default async function OrderPage({
           </ul>
           <dl className="mt-3 space-y-2 border-t border-line pt-3 text-sm">
             {order.discount_cents > 0 && <div className="flex justify-between gap-3 text-forest"><dt>Reward credit</dt><dd className="tabular">&minus;{formatCents(order.discount_cents)}</dd></div>}
+            {priorityCents > 0 && <div className="flex justify-between gap-3"><dt>Priority</dt><dd className="tabular">{formatCents(priorityCents)}</dd></div>}
             <div className="flex justify-between gap-3"><dt>Tip for your cook</dt><dd className="tabular">{formatCents(order.tip_cents ?? 0)}</dd></div>
           </dl>
           <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
@@ -214,7 +290,7 @@ export default async function OrderPage({
               Total · {order.payment_method === "cash" ? "cash at pickup" : "card"}
             </span>
             <span className="tabular font-display text-xl text-forest">
-              {formatCents(order.subtotal_cents + (order.tip_cents ?? 0))}
+              {formatCents(order.subtotal_cents + priorityCents + (order.tip_cents ?? 0))}
             </span>
           </div>
           <p className="mt-3 text-[11px] leading-relaxed text-ink-muted">
@@ -224,9 +300,12 @@ export default async function OrderPage({
         </section>
 
         {order.status === "pending" && (
-          <p className="mt-4 flex items-center gap-2 text-xs text-ink-muted">
-            <Clock className="h-3.5 w-3.5 pulse-soft" aria-hidden />
-            Waiting for {kitchen.name} to confirm.
+          <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-ink-muted">
+            <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 pulse-soft" aria-hidden />
+            <span>
+              Waiting for {kitchen.name} to confirm.
+              {scheduledFor && " They will start in time for the slot you booked."}
+            </span>
           </p>
         )}
         {order.status === "completed" && isBuyer && (

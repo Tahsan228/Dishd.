@@ -24,6 +24,7 @@ export function OrderChat({
   otherName,
   initialMessages,
   live,
+  poll = true,
 }: {
   orderId: string;
   viewerId: string;
@@ -32,6 +33,8 @@ export function OrderChat({
   initialMessages: ChatMessage[];
   /** False once the order is finished; the thread stays readable but closes. */
   live: boolean;
+  /** False when the page already has a poller, so the two do not both refresh. */
+  poll?: boolean;
 }) {
   const [state, action, pending] = useActionState(
     sendOrderMessage.bind(null, orderId),
@@ -60,9 +63,10 @@ export function OrderChat({
     endRef.current?.scrollIntoView({ block: "nearest" });
   }, [optimistic.length]);
 
-  // A thread only matters while the order is moving, so it polls only then.
+  // A thread only matters while the order is moving, so it polls only then —
+  // and not at all where the page runs its own timer.
   useEffect(() => {
-    if (!live) return;
+    if (!live || !poll) return;
     const tick = () => {
       if (document.visibilityState === "visible") router.refresh();
     };
@@ -72,7 +76,7 @@ export function OrderChat({
       window.clearInterval(timer);
       window.removeEventListener("focus", tick);
     };
-  }, [live, router]);
+  }, [live, poll, router]);
 
   return (
     <section className="mt-6 rounded-2xl border border-line bg-surface">
