@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
-import { Minus, Plus, ShoppingBag, TriangleAlert } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
+import { CalendarClock, Minus, Plus, ShoppingBag, TriangleAlert, Zap } from "lucide-react";
 import { useCart } from "@/components/market/use-cart";
 import { placeOrder, type PlaceOrderState } from "@/lib/market/order-actions";
 import { ACKNOWLEDGMENTS } from "@/lib/market/order-consent";
@@ -10,6 +10,13 @@ import { MAX_QTY_PER_ITEM } from "@/lib/market/cart";
 import { formatCents } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { parseTipCents } from "@/lib/market/money";
+import { loadKitchenTerms, type KitchenTerms } from "@/lib/market/kitchen-terms";
+import {
+  SCHEDULE_STEP_MINUTES,
+  checkScheduledFor,
+  scheduleBounds,
+  toLocalInputValue,
+} from "@/lib/market/order-timing";
 
 /**
  * Cart review and checkout.
@@ -41,6 +48,36 @@ export function Checkout({
   const [rewardId,setRewardId]=useState('');
   const [tip, setTip] = useState('0');
   const tipCents = parseTipCents(tip);
+
+  // What this kitchen currently offers. Read from the server rather than from
+  // the cart, which may have been sitting in this browser for days.
+  const [terms, setTerms] = useState<KitchenTerms | null>(null);
+  const [when, setWhen] = useState<'asap' | 'later'>('asap');
+  const [slot, setSlot] = useState('');
+  const [priority, setPriority] = useState(false);
+
+  const kitchenId = cart?.kitchenId ?? '';
+  useEffect(() => {
+    if (!kitchenId) { setTerms(null); return; }
+    let current = true;
+    // Switching kitchens must not leave the previous kitchen's offer on screen,
+    // so every choice that depends on the terms resets with them.
+    setTerms(null); setWhen('asap'); setSlot(''); setPriority(false);
+    loadKitchenTerms(kitchenId).then((next) => { if (current) setTerms(next); });
+    return () => { current = false; };
+  }, [kitchenId]);
+
+  const scheduling = when === 'later';
+  const bounds = scheduleBounds(new Date());
+  const slotAt = scheduling && slot ? new Date(slot) : null;
+  const slotCheck = slotAt ? checkScheduledFor(slotAt, new Date()) : null;
+  const slotError = scheduling
+    ? slot
+      ? (slotCheck && 'error' in slotCheck ? slotCheck.error : null)
+      : 'Choose a pickup date and time.'
+    : null;
+
+  const priorityCents = priority ? (terms?.priorityFeeCents ?? 0) : 0;
   const reward=rewards.find(r=>r.id===rewardId && subtotal>=r.minimum_order_cents);
   const acks = ackState.kitchenId === cart?.kitchenId ? ackState.acks : {};
   const setAcks = (next: Record<string, boolean>) =>
@@ -122,6 +159,94 @@ export function Checkout({
             </li>
           ))}
         </ul>
+
+        {terms && (
+          <fieldset className="mt-8 rounded-2xl border border-line bg-surface p-5">
+            <legend className="flex items-center gap-2 px-1 text-sm font-medium text-ink">
+              <CalendarClock className="h-4 w-4 text-forest" aria-hidden />
+              When do you want this?
+            </legend>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-3 text-sm has-checked:border-forest has-checked:bg-forest-soft">
+                <input
+                  type="radio"
+                  name="pickupWhen"
+                  value="asap"
+                  checked={!scheduling}
+                  onChange={() => setWhen("asap")}
+                  className="mt-0.5 accent-[var(--color-forest)]"
+                />
+                <span>
+                  <span className="block font-medium text-ink">As soon as possible</span>
+                  <span className="mt-0.5 block text-xs text-ink-muted">
+                    The cook starts once they accept.
+                  </span>
+                </span>
+              </label>
+
+              {terms.acceptsScheduled && (
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-3 text-sm has-checked:border-forest has-checked:bg-forest-soft">
+                  <input
+                    type="radio"
+                    name="pickupWhen"
+                    value="later"
+                    checked={scheduling}
+                    onChange={() => setWhen("later")}
+                    className="mt-0.5 accent-[var(--color-forest)]"
+                  />
+                  <span>
+                    <span className="block font-medium text-ink">Schedule for later</span>
+                    <span className="mt-0.5 block text-xs text-ink-muted">
+                      Up to seven days ahead, in 15-minute steps.
+                    </span>
+                  </span>
+                </label>
+              )}
+            </div>
+
+            {scheduling && (
+              <div className="mt-4">
+                <label htmlFor="pickup-slot" className="block text-sm text-ink-muted">
+                  Pickup time
+                </label>
+                <input
+                  id="pickup-slot"
+                  type="datetime-local"
+                  value={slot}
+                  onChange={(e) => setSlot(e.target.value)}
+                  min={toLocalInputValue(bounds.earliest)}
+                  max={toLocalInputValue(bounds.latest)}
+                  step={SCHEDULE_STEP_MINUTES * 60}
+                  aria-describedby="pickup-slot-error pickup-slot-note"
+                  aria-invalid={Boolean(slotError)}
+                  className="mt-1 min-h-11 w-full rounded-xl border border-line bg-cream px-3 text-base"
+                />
+                <p id="pickup-slot-error" aria-live="polite" className="mt-1 text-sm text-clay">
+                  {slotError ?? ""}
+                </p>
+                <p id="pickup-slot-note" className="mt-1 text-xs leading-relaxed text-ink-muted">
+                  Booking a time does not confirm the order. The cook still has to
+                  accept it, and you will see when they do.
+                </p>
+              </div>
+            )}
+
+            {!terms.acceptsScheduled && (
+              <p className="mt-3 text-xs text-ink-muted">
+                This kitchen is not taking scheduled pickups at the moment.
+              </p>
+            )}
+
+            {/* The visible control holds local wall time; this carries the exact
+                instant, so the server never has to guess the buyer's timezone. */}
+            <input
+              type="hidden"
+              name="scheduledFor"
+              value={slotAt && !slotError ? slotAt.toISOString() : ""}
+            />
+          </fieldset>
+        )}
 
         <fieldset className="mt-8 space-y-4 rounded-2xl bg-surface-sunk p-6">
           <legend className="px-1 text-xs font-medium text-ink">Before you order</legend>
@@ -206,14 +331,43 @@ export function Checkout({
             <input id="tip" name="tip" type="text" inputMode="decimal" value={tip} onChange={event => setTip(event.target.value)} aria-describedby="tip-help tip-error" aria-invalid={tipCents === null} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-cream px-3 text-base" />
             <p id="tip-error" className="mt-1 text-sm text-clay" aria-live="polite">{tipCents === null ? 'Enter $0 to $100, with up to two decimal places.' : ''}</p>
           </fieldset>
+          {terms && terms.priorityFeeCents > 0 && (
+            <fieldset className="mt-6">
+              <legend className="text-sm font-medium text-ink">Jump the queue</legend>
+              <label className="mt-2 flex cursor-pointer items-start gap-3 rounded-xl border border-line p-3 text-sm has-checked:border-brass has-checked:bg-brass/10">
+                <input
+                  type="checkbox"
+                  name="priority"
+                  checked={priority}
+                  onChange={(e) => setPriority(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-forest)]"
+                />
+                <span>
+                  <span className="flex items-center gap-1.5 font-medium text-ink">
+                    <Zap className="h-3.5 w-3.5 shrink-0 text-brass-ink" aria-hidden />
+                    Priority &middot; {formatCents(terms.priorityFeeCents)}
+                  </span>
+                  {/* Says what the money buys and nothing more. The cook sees this
+                      order first; nobody here controls how fast they cook. */}
+                  <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
+                    {cart.kitchenName} sets this price and keeps it. It puts your
+                    order at the top of their list. It is not a promised time, and
+                    Dishd does not guarantee one.
+                  </span>
+                </span>
+              </label>
+            </fieldset>
+          )}
+
           <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between gap-3"><dt>Food after rewards</dt><dd className="tabular">{formatCents(subtotal-(reward?.credit_cents??0))}</dd></div>
+            {priorityCents > 0 && <div className="flex justify-between gap-3"><dt>Priority</dt><dd className="tabular">{formatCents(priorityCents)}</dd></div>}
             <div className="flex justify-between gap-3"><dt>Tip</dt><dd className="tabular">{formatCents(tipCents??0)}</dd></div>
           </dl>
           <div aria-live="polite" className="mt-4 flex items-center justify-between border-t border-line pt-3">
             <span className="text-sm text-ink-muted">Total</span>
             <span className="tabular font-display text-2xl text-forest">
-              {formatCents(subtotal-(reward?.credit_cents??0)+(tipCents??0))}
+              {formatCents(subtotal-(reward?.credit_cents??0)+priorityCents+(tipCents??0))}
             </span>
           </div>
 
@@ -226,7 +380,7 @@ export function Checkout({
 
           <button
             type="submit"
-            disabled={pending || !allAcked || tipCents === null}
+            disabled={pending || !allAcked || tipCents === null || Boolean(slotError)}
             className="mt-4 min-h-11 w-full rounded-full bg-forest px-4 text-sm font-medium text-cream hover:bg-forest-deep disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Placing your order…" : "Place order"}
@@ -240,7 +394,7 @@ export function Checkout({
 
           <p className="mt-3 text-center text-[11px] leading-relaxed text-ink-muted">
             The cook confirms before cooking. The exact address is shared once
-            they accept.
+            they accept, and they set the cooking time you will see then.
           </p>
         </div>
       </aside>

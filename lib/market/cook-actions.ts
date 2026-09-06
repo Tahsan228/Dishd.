@@ -12,6 +12,13 @@ import {
   type CookActionState,
 } from "@/lib/market/cook-onboarding";
 import { photoExtension, photoFileError } from "@/lib/social/review-validation";
+import {
+  MAX_PRIORITY_FEE_CENTS,
+  PREP_MAX_MINUTES,
+  PREP_MIN_MINUTES,
+  parsePrepMinutes,
+  parsePriorityFeeCents,
+} from "@/lib/market/order-timing";
 
 /**
  * Cook onboarding.
@@ -358,4 +365,54 @@ async function ownedKitchen(
     .eq("owner_id", userId)
     .maybeSingle();
   return (data as OwnedKitchen | null) ?? null;
+}
+
+/**
+ * The terms this kitchen trades on: how long the food takes, whether it sells a
+ * priority slot and for how much, and whether it takes bookings.
+ *
+ * Kept apart from onboarding because a cook changes these while trading — a
+ * kitchen that is suddenly three hours deep says so by raising its cooking
+ * time, and one that cannot keep up withdraws priority by pricing it at zero.
+ */
+export async function updateOrderSettings(
+  _prev: CookActionState,
+  form: FormData,
+): Promise<CookActionState> {
+  const { supabase, user } = await requireUser();
+  const kitchen = await ownedKitchen(supabase, user.id);
+  if (!kitchen) return { ok: false, message: "Create your kitchen first." };
+
+  const errors: Record<string, string> = {};
+
+  const prepMinutes = parsePrepMinutes(form.get("defaultPrepMinutes"));
+  if (prepMinutes === null) {
+    errors.defaultPrepMinutes = `Enter a whole number of minutes, ${PREP_MIN_MINUTES} to ${PREP_MAX_MINUTES}.`;
+  }
+
+  // Zero is a valid price and is how a kitchen withdraws the offer, so an empty
+  // box is read as zero rather than rejected.
+  const rawFee = String(form.get("priorityFee") ?? "").trim();
+  const priorityFeeCents = rawFee === "" ? 0 : parsePriorityFeeCents(rawFee);
+  if (priorityFeeCents === null) {
+    errors.priorityFee = `Enter an amount between $0 and ${(MAX_PRIORITY_FEE_CENTS / 100).toFixed(2)}, or leave it empty to stop offering it.`;
+  }
+
+  if (Object.keys(errors).length) {
+    return { ok: false, message: "Check the highlighted fields.", errors };
+  }
+
+  const { error } = await supabase
+    .from("kitchens")
+    .update({
+      default_prep_minutes: prepMinutes,
+      priority_fee_cents: priorityFeeCents,
+      accepts_scheduled: form.get("acceptsScheduled") === "on",
+    })
+    .eq("id", kitchen.id);
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/cook");
+  revalidatePath(`/k/${kitchen.slug}`);
+  return { ok: true, message: "Saved. New orders use these settings." };
 }
