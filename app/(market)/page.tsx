@@ -20,7 +20,7 @@ import { BuyerHome } from "@/components/market/buyer-home";
 import { LocationSearch } from "@/components/market/location-search";
 import { currentProfile } from "@/lib/market/auth-actions";
 import { formatMiles, rankByDistance, resolveLocation } from "@/lib/market/nearby";
-import { toStars } from "@/lib/utils";
+import { cn, toStars } from "@/lib/utils";
 
 function timeAgo(iso: string) {
   const days = Math.round((Date.now() - new Date(iso).getTime()) / 864e5);
@@ -30,6 +30,18 @@ function timeAgo(iso: string) {
   if (days < 60) return `${Math.round(days / 7)} weeks ago`;
   return `${Math.round(days / 30)} months ago`;
 }
+
+/**
+ * Decorative rating chips scattered around the hero plate.
+ *
+ * Each carries its own drift speed and tilt so they never bob in unison, which
+ * is what makes floating elements read as mechanical.
+ */
+const HERO_RATINGS = [
+  { score: "4.8", label: "Dishd Verified", at: "-top-3 -left-5", drift: "drift", tilt: "-3deg" },
+  { score: "4.9", label: "Amina's Kitchen", at: "top-1/3 -right-6", drift: "drift-slow", tilt: "2.5deg" },
+  { score: "4.6", label: "Hafsa's Table", at: "-bottom-4 -left-8", drift: "drift-slower", tilt: "3deg" },
+] as const;
 
 /** Three steps, told as a story rather than a feature list. */
 const TRUST_STEPS = [
@@ -91,7 +103,7 @@ export default async function DiscoveryPage({
           <div className="rise relative mx-auto grid w-full max-w-7xl items-center gap-10 px-4 pt-10 pb-12 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14 lg:pt-14 lg:pb-16">
             {/* Copy column. Measure is capped near 60 characters so lines break
                 where the eye expects rather than running the full page width. */}
-            <div className="max-w-xl">
+            <div className="slide-left max-w-xl">
               <p className="flex items-center gap-2 text-xs font-medium tracking-[0.14em] text-brass uppercase">
                 <MapPinned className="h-3.5 w-3.5" aria-hidden />
                 Bergen County &middot; New Jersey
@@ -133,7 +145,7 @@ export default async function DiscoveryPage({
             {/* Dish column. Hidden below lg: at phone width a decorative photo
                 would push the search box under the fold, which is the one thing
                 the hero exists to show. */}
-            <div className="relative hidden lg:block">
+            <div className="slide-right delay-1 relative hidden lg:block">
               <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-forest-deep shadow-2xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -161,15 +173,30 @@ export default async function DiscoveryPage({
                 </figcaption>
               </div>
 
-              {/* A small earned-tier marker, offset so the composition is not a
-                  plain rectangle. */}
-              <div className="absolute -top-3 -left-5 rounded-2xl border border-brass/40 bg-cream px-4 py-3 shadow-lg">
-                <p className="tabular font-display text-2xl leading-none text-forest">4.8</p>
-                <p className="mt-1 flex items-center gap-1 text-[11px] text-brass-ink">
-                  <Star className="h-3 w-3 fill-brass text-brass" aria-hidden />
-                  Dishd Verified
-                </p>
-              </div>
+              {/* Ratings scattered around the plate, each drifting on its own
+                  clock so they never move in lockstep. Decorative: the real
+                  numbers are on the cards below, and a screen reader gets
+                  nothing useful from a floating "4.8". */}
+              {HERO_RATINGS.map((chip) => (
+                <div
+                  key={chip.label}
+                  aria-hidden
+                  style={{ ["--tilt" as string]: chip.tilt }}
+                  className={cn(
+                    "absolute rounded-2xl border border-brass/40 bg-cream px-4 py-3 shadow-lg",
+                    chip.at,
+                    chip.drift,
+                  )}
+                >
+                  <p className="tabular font-display text-2xl leading-none text-forest">
+                    {chip.score}
+                  </p>
+                  <p className="mt-1 flex items-center gap-1 text-[11px] whitespace-nowrap text-brass-ink">
+                    <Star className="h-3 w-3 fill-brass text-brass" aria-hidden />
+                    {chip.label}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </section>

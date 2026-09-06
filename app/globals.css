@@ -171,6 +171,38 @@ a:active { transform: translateY(1px) scale(.995); }
 }
 .expand { animation: expand .28s cubic-bezier(.22,.61,.36,1) both; }
 
+/* Directional entrances. Used where two halves of a layout should feel like
+   they arrive from their own side rather than both fading in place. */
+@keyframes slide-left  { from { opacity: 0; transform: translateX(-22px); } to { opacity: 1; transform: none; } }
+@keyframes slide-right { from { opacity: 0; transform: translateX(22px);  } to { opacity: 1; transform: none; } }
+@keyframes slide-up    { from { opacity: 0; transform: translateY(18px);  } to { opacity: 1; transform: none; } }
+
+.slide-left  { animation: slide-left  .6s cubic-bezier(.22,.61,.36,1) both; }
+.slide-right { animation: slide-right .6s cubic-bezier(.22,.61,.36,1) both; }
+.slide-up    { animation: slide-up    .55s cubic-bezier(.22,.61,.36,1) both; }
+
+/* Small delay steps, so a group arrives in sequence instead of all at once. */
+.delay-1 { animation-delay: .08s }
+.delay-2 { animation-delay: .16s }
+.delay-3 { animation-delay: .24s }
+.delay-4 { animation-delay: .32s }
+
+/*
+ * Floating rating chips.
+ *
+ * Two animations compose: the entrance runs once, then a slow drift loops.
+ * The drift is deliberately tiny — a couple of pixels over several seconds —
+ * because anything larger reads as broken layout rather than life, and these
+ * sit over a photograph where movement is already easy to notice.
+ */
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--tilt, 0deg)); }
+  50%      { transform: translate3d(0, -7px, 0) rotate(calc(var(--tilt, 0deg) * -1)); }
+}
+.drift { animation: drift 7s ease-in-out infinite; }
+.drift-slow { animation: drift 9.5s ease-in-out infinite; }
+.drift-slower { animation: drift 12s ease-in-out infinite; }
+
 /* Respect the user's setting. Non-negotiable. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

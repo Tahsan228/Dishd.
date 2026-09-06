@@ -116,36 +116,6 @@ const reportSchema = z.object({
   orderId: z.string().trim().optional().default(""),
 });
 
-/** The reasons a buyer can raise, in the order of seriousness. */
-export const REPORT_REASONS: { key: string; label: string; hint: string }[] = [
-  {
-    key: "haram_sourcing",
-    label: "The food was not halal",
-    hint: "The meat or its sourcing did not match what the kitchen claimed.",
-  },
-  {
-    key: "misrepresentation",
-    label: "Sourcing was misrepresented",
-    hint: "The receipt or supplier shown does not match what was served.",
-  },
-  {
-    key: "allergen",
-    label: "An allergen was undeclared",
-    hint: "Something was present that the listing did not declare.",
-  },
-  {
-    key: "hygiene",
-    label: "A hygiene problem",
-    hint: "Handling, packaging or storage was unsafe.",
-  },
-  {
-    key: "quality",
-    label: "Quality fell below standard",
-    hint: "Cold, spoiled, or not what was ordered.",
-  },
-  { key: "other", label: "Something else", hint: "Anything not covered above." },
-];
-
 /**
  * Report a kitchen.
  *

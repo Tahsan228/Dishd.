@@ -2,11 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { CheckCircle2, Flag, TriangleAlert } from "lucide-react";
-import {
-  REPORT_REASONS,
-  reportKitchen,
-  type CommunityActionState,
-} from "@/lib/social/community-actions";
+import { reportKitchen, type CommunityActionState } from "@/lib/social/community-actions";
+// Plain module: a "use server" file may only export async functions, so shared
+// constants imported from one arrive as undefined in the client bundle.
+import { REPORT_REASONS } from "@/lib/social/community";
 import { cn } from "@/lib/utils";
 
 const initial: CommunityActionState = { ok: false, message: "" };

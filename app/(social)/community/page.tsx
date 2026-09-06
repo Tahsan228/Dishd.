@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Crown, Flame, ShieldAlert, Star } from "lucide-react";
-import { SiteHeader } from "@/components/market/site-header";
 import { CommunityFeed, type CommunityPost } from "@/components/social/community-feed";
 import { CommunityComposer } from "@/components/social/community-composer";
 import { createServerClient } from "@/lib/supabase/server";
@@ -28,7 +27,7 @@ export default async function CommunityPage() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return (
       <>
-        <SiteHeader />
+        {/* The (social) layout already renders SocialHeader, which wraps SiteHeader. */}
         <main className="mx-auto w-full max-w-3xl px-4 py-16 text-center">
           <p className="text-ink-muted">Connect Supabase to see the community.</p>
         </main>
@@ -105,7 +104,7 @@ export default async function CommunityPage() {
 
   return (
     <>
-      <SiteHeader />
+
       <main className="mx-auto w-full max-w-6xl px-4 pb-20 pt-8 sm:px-6">
         <h1 className="font-display text-3xl text-forest sm:text-4xl">Community</h1>
         <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">

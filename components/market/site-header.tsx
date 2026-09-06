@@ -61,8 +61,14 @@ export async function SiteHeader() {
                 Community
               </Link>
               <Link
-                href="/rewards"
+                href="/orders"
                 className="rounded-full px-3 py-2 text-ink-muted hover:text-forest"
+              >
+                Orders
+              </Link>
+              <Link
+                href="/rewards"
+                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest sm:inline-block"
               >
                 Points
               </Link>

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Clock, CheckCircle2, ChefHat, Lock } from "lucide-react";
+import { MapPin, Clock, CheckCircle2, ChefHat, Lock, ArrowLeft } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { settleFromCheckout } from "@/lib/market/payment-settlement";
 import { SiteHeader } from "@/components/market/site-header";
@@ -73,7 +73,14 @@ export default async function OrderPage({
       <OrderLiveRefresh active={!cancelled && order.status !== "completed"} />
       <ClearCartOnOrder orderId={order.id} kitchenId={order.kitchen_id} />
       <main className="mx-auto w-full max-w-2xl px-4 pb-20 pt-8">
-        <p className="text-sm text-ink-muted">
+        <Link
+          href="/orders"
+          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-forest underline-offset-4 hover:underline"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          All your orders
+        </Link>
+        <p className="mt-2 text-sm text-ink-muted">
           Order from{" "}
           <Link href={`/k/${kitchen.slug}`} className="font-medium text-forest underline-offset-2 hover:underline">
             {kitchen.name}

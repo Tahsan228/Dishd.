@@ -203,3 +203,53 @@ export function categoryLabel(category: string): string {
 export function allowedCategories(hasKitchen: boolean): PostCategory[] {
   return POST_CATEGORIES.filter((c) => (c.byKitchen ? hasKitchen : true)).map((c) => c.key);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Reports                                                                    */
+/* -------------------------------------------------------------------------- */
+
+export type ReportReason =
+  | "haram_sourcing"
+  | "misrepresentation"
+  | "allergen"
+  | "hygiene"
+  | "quality"
+  | "other";
+
+/**
+ * The reasons a buyer can raise, most serious first.
+ *
+ * This lives here rather than beside the server action on purpose. A
+ * `"use server"` module may only export async functions — a plain constant
+ * exported from one is replaced by `undefined` in the client bundle, so
+ * `REPORT_REASONS[0]` threw and took the whole completed-order page down with
+ * a 500. Shared data belongs in a plain module both sides can import.
+ */
+export const REPORT_REASONS: { key: ReportReason; label: string; hint: string }[] = [
+  {
+    key: "haram_sourcing",
+    label: "The food was not halal",
+    hint: "The meat or its sourcing did not match what the kitchen claimed.",
+  },
+  {
+    key: "misrepresentation",
+    label: "Sourcing was misrepresented",
+    hint: "The receipt or supplier shown does not match what was served.",
+  },
+  {
+    key: "allergen",
+    label: "An allergen was undeclared",
+    hint: "Something was present that the listing did not declare.",
+  },
+  {
+    key: "hygiene",
+    label: "A hygiene problem",
+    hint: "Handling, packaging or storage was unsafe.",
+  },
+  {
+    key: "quality",
+    label: "Quality fell below standard",
+    hint: "Cold, spoiled, or not what was ordered.",
+  },
+  { key: "other", label: "Something else", hint: "Anything not covered above." },
+];
