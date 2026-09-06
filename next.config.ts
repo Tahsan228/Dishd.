@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
   // Lets a production build run beside the shared dev preview on port 4173
   // without the two fighting over .next. Unset everywhere else, including on
   // Vercel, so the default output directory is used there.
+  //
+  // Building with it set makes Next rewrite tsconfig.json to include the
+  // alternate types directory. That edit is local scaffolding for a directory
+  // no other checkout has: revert it rather than committing it.
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
 };
 
