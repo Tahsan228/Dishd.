@@ -1,4 +1,5 @@
 "use server";
+import { cache } from "react";
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -104,6 +105,10 @@ export async function signOut() {
 
 /** The signed-in user's profile, or null. Used by the header and order flow. */
 export async function currentProfile() {
+  return readCurrentProfile();
+}
+
+const readCurrentProfile = cache(async () => {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
   try {
     const supabase = await createServerClient();
@@ -118,4 +123,4 @@ export async function currentProfile() {
   } catch {
     return null;
   }
-}
+});

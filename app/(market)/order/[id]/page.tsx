@@ -4,7 +4,7 @@ import { MapPin, Clock, CheckCircle2, ChefHat, Lock, ArrowLeft, CalendarClock, Z
 import { createServerClient } from "@/lib/supabase/server";
 import { settleFromCheckout } from "@/lib/market/payment-settlement";
 import { SiteHeader } from "@/components/market/site-header";
-import { OrderReviewLink } from "@/components/social/order-review-link";
+import { OrderPickupReview } from "@/components/social/order-pickup-review";
 import { ClearCartOnOrder } from "@/components/market/clear-cart-on-order";
 import { ReportDialog } from "@/components/social/report-dialog";
 import { OrderNotifications } from "@/components/market/order-notifications";
@@ -317,7 +317,7 @@ export default async function OrderPage({
             {/* The completing trigger already wrote the verified log; this
                 resolves it so the buyer can actually rate the meal. */}
             <div className="mt-3">
-              <OrderReviewLink orderId={id} />
+              <OrderPickupReview orderId={id} />
             </div>
 
             {/* Tied to this order, which is what makes the report worth acting

@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ShieldCheck, Star } from "lucide-react";
+import { ShieldCheck, Star, Utensils, MapPin } from "lucide-react";
 import type { KitchenPublic } from "@/lib/types";
 import { toStars } from "@/lib/utils";
+import { travelEstimate } from "@/lib/market/discovery";
 
 /**
  * Discovery card. Shows marketplace facts only — rating, volume, sourcing.
@@ -10,14 +11,14 @@ import { toStars } from "@/lib/utils";
  * page in the social workstream's credibility panel, so this file has no
  * dependency on the scoring formula.
  */
-export function KitchenCard({ kitchen }: { kitchen: KitchenPublic }) {
+export function KitchenCard({ kitchen, miles = null }: { kitchen: KitchenPublic; miles?: number | null }) {
   const stars = toStars(Number(kitchen.avg_rating_10));
   const hasSourcingStreak = kitchen.trust_streak > 0;
 
   return (
     <Link
       href={`/k/${kitchen.slug}`}
-      className="lift group block overflow-hidden rounded-xl border border-line bg-surface hover:border-forest/30"
+      className="lift group block h-full overflow-hidden rounded-2xl border border-line bg-surface hover:border-forest/30"
     >
       <div className="aspect-[16/10] w-full overflow-hidden bg-surface-sunk">
         {kitchen.hero_url ? (
@@ -25,6 +26,8 @@ export function KitchenCard({ kitchen }: { kitchen: KitchenPublic }) {
           <img
             src={kitchen.hero_url}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover"
           />
         ) : null}
@@ -32,7 +35,7 @@ export function KitchenCard({ kitchen }: { kitchen: KitchenPublic }) {
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-display text-lg leading-tight text-forest">
+          <h3 className="font-sans text-lg font-semibold leading-snug text-forest">
             {kitchen.name}
           </h3>
           {Number(kitchen.avg_rating_10) > 0 && (
@@ -50,10 +53,12 @@ export function KitchenCard({ kitchen }: { kitchen: KitchenPublic }) {
           )}
         </p>
 
+        <div className="mt-4 flex items-center gap-3 rounded-xl bg-forest-soft px-3 py-3 text-forest">
+          <Utensils className="h-5 w-5 shrink-0" aria-hidden />
+          <span><strong className="tabular text-xl font-semibold">{kitchen.orders_completed.toLocaleString()}</strong> <span className="text-sm font-medium">meals served</span></span>
+        </div>
+        {miles !== null && <p className="mt-3 flex items-center gap-1 text-xs text-ink-muted"><MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />~{miles.toFixed(1)} mi · {travelEstimate(miles)}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
-          {kitchen.orders_completed > 0 && (
-            <span className="tabular">{kitchen.orders_completed} meals served</span>
-          )}
           {hasSourcingStreak && (
             <span className="flex items-center gap-1 text-brass-ink">
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden />

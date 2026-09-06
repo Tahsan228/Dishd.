@@ -1,4 +1,5 @@
-import { ShieldCheck, Clock, TriangleAlert, Info, Flame, Utensils } from "lucide-react";
+import { ShieldCheck, Clock, TriangleAlert, Info, Flame, Utensils, Star } from "lucide-react";
+import { getDishRatingSummaries } from "@/lib/market/dish-ratings";
 import { getKitchenMenu, type MenuItemWithProvenance } from "@/lib/market/kitchens";
 import { AddToCart } from "@/components/market/add-to-cart";
 import { formatCents } from "@/lib/utils";
@@ -101,6 +102,7 @@ export async function MenuGrid({
   kitchen: { id: string; name: string; slug: string };
 }) {
   const items = await getKitchenMenu(kitchen.id);
+  const ratings = await getDishRatingSummaries(items.map(item => item.id));
 
   if (items.length === 0) {
     return (
@@ -115,12 +117,13 @@ export async function MenuGrid({
       {items.map((item) => (
         <article
           key={item.id}
-          className="lift flex flex-col overflow-hidden rounded-xl border border-line bg-surface"
+          id={`dish-${item.id}`}
+          className="lift flex scroll-mt-32 flex-col overflow-hidden rounded-xl border border-line bg-surface"
         >
           <div className="aspect-[16/10] overflow-hidden bg-surface-sunk">
             {item.photo_url && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={item.photo_url} alt="" className="h-full w-full object-cover" />
+              <img src={item.photo_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
             )}
           </div>
 
@@ -135,6 +138,13 @@ export async function MenuGrid({
             {item.description && (
               <p className="mt-1 text-sm leading-relaxed text-ink-muted">{item.description}</p>
             )}
+
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-forest">
+              <Star className="h-4 w-4 text-brass" aria-hidden />
+              {ratings.get(item.id)?.rating_count
+                ? `${(ratings.get(item.id)!.avg_rating_10 / 2).toFixed(1)} · ${ratings.get(item.id)!.rating_count} dish ratings`
+                : "No dish ratings yet"}
+            </p>
 
             {(item.portion_size || item.calories !== null) && (
               <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">

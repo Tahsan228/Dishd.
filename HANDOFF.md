@@ -89,6 +89,17 @@ User explicitly requested concurrent, separate payment work while Claude updated
 - Activation still required: apply supabase/migrations/0011_cash_commission_and_tips.sql after 0010 in the Supabase SQL editor (or provide a local file path containing schema-management credentials), then configure the Stripe signing secret for /api/stripe/webhook. The migration is fully tested locally but has NOT been applied to the live project. Never claim live money collection verified. Existing order/dashboard reads tolerate the column rollout; checkout returns a readable temporary-unavailability message until the new RPC is present.
 - Cash fee checkout uses the existing NEXT_PUBLIC_APP_URL for redirects; match it to the intended preview/deployment. Card payouts to cooks still require Stripe Connect; this work does not claim those transfers are implemented.
 
+## Signed-in discovery checkpoint (Codex, 2026-09-06)
+
+- Continuing the user's signed-in homepage request alongside Claude's separate menu/chat/order-timing work in this shared checkout. No subagents, server restarts, history resets, or signed-out landing redesign. Integration changes in root routing, shared header/cards, menu ratings, and the completed-order review slot are deliberately small.
+- New signed-in dish feed, lazy neighborhood map, town/ZIP/device location, approximate area distances and explicitly rough drive times. Public coordinates only; exact pickup addresses never enter discovery. Search and all requested dietary/occasion filters require actual receipts or explicit seller declarations.
+- Offer/reward banners, places to try, returning-diner favorites, family meals, prominent completed meal counts, and a separate account menu. Three original 6-second canvas demo videos are committed assets, labeled as illustrations, with click-to-play loading.
+- /cook/discovery lets authenticated owners maintain declarations, servings, meal tags and expiring offer headlines. Prices stay the actual menu price. No fabricated kitchen discounts, dietary certification, purchases or ratings.
+- Completed pickups have an inline review composer and signed-in home review prompts. Migration 0013 adds atomic pickup/dish review saving, private purchase-linked ratings, public dish aggregates and owner-scoped discovery metadata. Existing review saving degrades gracefully while awaiting the migration.
+- Points earning and credibility formulas are unchanged as requested. Home now labels spendable Neighborhood Points correctly. Rewards totals use the whole ledger rather than a 50-entry history preview. A request-scoped summary RPC has a paginated RLS fallback.
+- Signed-in rendering skips signed-out marketing queries, shares profile reads within the request, streams secondary sections, lazy-loads maps/images/videos and uses local search/filtering.
+- Checkpoint checks: TypeScript passes; all 378 current unit tests and 80 isolated PostgreSQL checks pass (including Claude's timing tests). Browser checks and final lint are next. Migration 0013 is tested locally but NOT applied live; no schema-management credential exists in .env.local. The earlier 0011 billing activation requirements still apply.
+
 ## Order timing checkpoint (Claude, 2026-09-06)
 
 The user asked for four things on the order tracking page — notifications when

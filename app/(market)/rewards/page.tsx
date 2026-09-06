@@ -8,14 +8,13 @@ import { MissionForm, RedeemPanel } from "@/components/market/reward-forms";
 import {
   EARN_RULES,
   nextRewardProgress,
-  pointsBalance,
-  pointsEarned,
   type RewardCatalogItem,
   type RewardClaim,
   type RewardEvent,
   type RewardRedemption,
 } from "@/lib/market/rewards";
 import { formatCents } from "@/lib/utils";
+import { getRewardSummary } from "@/lib/market/reward-summary";
 
 export const metadata: Metadata = {
   title: "Neighborhood Points · Dishd",
@@ -31,7 +30,7 @@ export default async function RewardsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/signin?next=%2Frewards");
 
-  const [eventsResult, catalogResult, redemptionsResult, claimsResult, ordersResult] =
+  const [eventsResult, catalogResult, redemptionsResult, claimsResult, ordersResult, summary] =
     await Promise.all([
       supabase
         .from("reward_events")
@@ -55,6 +54,7 @@ export default async function RewardsPage() {
         .eq("buyer_id", user.id)
         .eq("status", "completed")
         .limit(50),
+      getRewardSummary(user.id),
     ]);
 
   const events = (eventsResult.data ?? []) as RewardEvent[];
@@ -62,8 +62,8 @@ export default async function RewardsPage() {
   const redemptions = (redemptionsResult.data ?? []) as RewardRedemption[];
   const claims = (claimsResult.data ?? []) as RewardClaim[];
 
-  const balance = pointsBalance(events);
-  const earned = pointsEarned(events);
+  const balance = summary.balance;
+  const earned = summary.earned;
   const progress = nextRewardProgress(balance, catalog);
 
   const seen = new Map<string, string>();
@@ -91,7 +91,7 @@ export default async function RewardsPage() {
           <div className="flex flex-wrap items-end justify-between gap-4 p-5 sm:p-6">
             <div>
               <p className="text-xs tracking-wide text-brass-ink uppercase">Your balance</p>
-              <p className="tabular font-display text-5xl leading-none text-forest">{balance}</p>
+              <p className="tabular font-display text-5xl leading-none text-forest">{summary.available ? balance : "Unavailable"}</p>
               <p className="tabular mt-1 text-xs text-ink-muted">
                 {earned} earned all time
               </p>
@@ -131,7 +131,7 @@ export default async function RewardsPage() {
           Credits come off the real total at checkout — cash or card.
         </p>
         <div className="mt-4">
-          <RedeemPanel catalog={catalog} balance={balance} />
+          {summary.available ? <RedeemPanel catalog={catalog} balance={balance} /> : <p role="status" className="text-sm text-ink-muted">Your points are temporarily unavailable. Please try again shortly.</p>}
         </div>
 
         {available.length > 0 && (

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CookingPot } from "lucide-react";
+import { CookingPot, ChevronDown } from "lucide-react";
 import { currentProfile, signOut } from "@/lib/market/auth-actions";
 import { createServerClient } from "@/lib/supabase/server";
 import { CartButton } from "@/components/market/cart-button";
@@ -45,51 +45,55 @@ export async function SiteHeader() {
           />
         </Link>
 
-        <nav className="flex items-center gap-2 text-sm">
+        <nav aria-label="Main navigation" className="flex min-w-0 items-center gap-2 text-sm">
           <CartButton />
           {profile ? (
             <>
-              <span className="hidden text-ink-muted md:inline">{profile.display_name}</span>
               {/* The personal diary is the social half of the product; without
                   a link here it was only reachable from an order. */}
               <Link
                 href="/community"
-                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest sm:inline-block"
+                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest lg:inline-block"
               >
                 Community
               </Link>
               <Link
                 href="/orders"
-                className="rounded-full px-3 py-2 text-ink-muted hover:text-forest"
+                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest lg:inline-block"
               >
                 Orders
               </Link>
               <Link
                 href="/rewards"
-                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest sm:inline-block"
+                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest lg:inline-block"
               >
                 Points
               </Link>
               <Link
                 href="/diary"
-                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest sm:inline-block"
+                className="hidden rounded-full px-3 py-2 text-ink-muted hover:text-forest lg:inline-block"
               >
                 Diary
               </Link>
               <Link
                 href="/cook"
-                className="rounded-full bg-forest px-4 py-2 font-medium text-cream hover:bg-forest-deep"
+                className="hidden rounded-full bg-forest px-4 py-2 font-medium text-cream hover:bg-forest-deep lg:inline-block"
               >
                 {ownsKitchen ? "My kitchen" : "Start selling"}
               </Link>
-              <form action={signOut}>
-                <button
-                  type="submit"
-                  className="rounded-full border border-line px-3 py-2 text-ink-muted hover:border-forest hover:text-forest"
-                >
-                  Sign out
-                </button>
-              </form>
+              <details className="relative min-w-0">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-forest/20 bg-forest-soft px-3 py-2 text-forest">
+                  <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-forest text-sm font-semibold text-cream">{profile.display_name.charAt(0)}</span>
+                  <span className="min-w-0"><strong className="block max-w-20 truncate text-sm sm:max-w-32">{profile.display_name.split(" ")[0]}</strong><span className="block text-[11px] text-ink-muted">Your account</span></span>
+                  <ChevronDown className="hidden h-4 w-4 shrink-0 sm:block" aria-hidden />
+                </summary>
+                <div className="absolute right-0 top-full z-40 mt-2 w-60 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-surface p-3 shadow-lg">
+                  <p className="border-b border-line px-3 pb-3 pt-1 text-sm font-semibold text-forest">{profile.display_name}<span className="mt-1 block text-xs font-normal text-ink-muted">@{profile.handle}</span></p>
+                  {[["/u/" + profile.handle, "Your profile"], ["/orders", "Your orders"], ["/rewards", "Neighborhood Points"], ["/community", "Community"], ["/diary", "Your diary"], ["/cook", ownsKitchen ? "My kitchen" : "Start selling"]].map(([href,label]) => <Link key={href} href={href} className="block min-h-11 rounded-xl px-3 py-3 text-sm text-forest hover:bg-forest-soft">{label}</Link>)}
+                  {ownsKitchen && <Link href="/cook/discovery" className="block min-h-11 rounded-xl px-3 py-3 text-sm text-forest hover:bg-forest-soft">Discovery &amp; offers</Link>}
+                  <form action={signOut} className="border-t border-line"><button type="submit" className="min-h-11 w-full rounded-xl px-3 py-3 text-left text-sm text-ink-muted hover:bg-surface-sunk">Sign out</button></form>
+                </div>
+              </details>
             </>
           ) : (
             <>

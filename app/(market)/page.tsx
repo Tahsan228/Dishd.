@@ -69,16 +69,16 @@ export default async function DiscoveryPage({
 }) {
   const { near } = await searchParams;
 
-  const [kitchens, stats, activity, profile] = await Promise.all([
+  const [kitchens, profile] = await Promise.all([
     listActiveKitchens(),
-    getPlatformStats(),
-    getRecentActivity(6),
     currentProfile(),
   ]);
 
   // Someone signed in has already been sold the idea; they came here to order.
   // The pitch below is for a first visit.
-  if (profile) return <BuyerHome profile={profile} kitchens={kitchens} />;
+  if (profile) return <BuyerHome profile={profile} kitchens={kitchens} near={near} />;
+
+  const [stats, activity] = await Promise.all([getPlatformStats(), getRecentActivity(6)]);
 
   // A typed town or ZIP re-orders the list by distance from that point.
   const location = near ? resolveLocation(near) : null;

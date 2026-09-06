@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { socialClient } from "@/lib/social/data";
 import { photoExtension, reviewSchema, type ReviewActionState } from "@/lib/social/review-validation";
 import { galleryError } from "@/lib/market/upload-validation";
+import { parseDishRatings } from "@/lib/social/dish-rating-validation";
 
 export async function saveReview(logId: string, previous: ReviewActionState, form: FormData): Promise<ReviewActionState> {
   void previous;
@@ -10,6 +11,8 @@ export async function saveReview(logId: string, previous: ReviewActionState, for
   catch { return { ok: false, message: "The review service could not be reached. Your draft is still here; please try again." }; }
 }
 async function saveReviewChecked(logId: string, form: FormData): Promise<ReviewActionState> {
+  const dishRatings = parseDishRatings(form);
+  if (!dishRatings) return { ok: false, message: "Choose a valid rating for each dish." };
   const parsed = reviewSchema.safeParse({ rating: form.get("rating"), body: form.get("body") ?? "", photo: form.get("photo") ?? "", sourcing: form.get("sourcing"), flavor: form.get("flavor") ?? "", value: form.get("value") ?? "", quality: form.get("quality") ?? "" });
   if (!parsed.success) {
     const errors: ReviewActionState["errors"] = {};
@@ -50,13 +53,20 @@ async function saveReviewChecked(logId: string, form: FormData): Promise<ReviewA
     photos.push(supabase.storage.from("photos").getPublicUrl(path).data.publicUrl);
   }
   const { rating, body, sourcing, flavor, value, quality } = parsed.data;
-  const { data: saved, error } = await supabase.from("logs").update({
+  const payload = {
     rating_10: Number(rating), body: body || null, photo_url: photos[0] ?? null, photo_urls: photos,
     flavor_rating_10: flavor ? Number(flavor) : null, value_rating_10: value ? Number(value) : null,
     quality_rating_10: quality ? Number(quality) : null,
     sourcing_affirmed: sourcing === "unsure" ? null : sourcing === "yes",
-  }).eq("id", logId).eq("buyer_id", user.id).select("id").maybeSingle();
-  if (error || !saved) {
+  };
+  const result = await supabase.rpc("dishd_save_pickup_review", { p_log: logId, p_review: payload, p_ratings: dishRatings });
+  let saveError = result.error;
+  // Existing kitchen reviews remain usable while the dish-rating migration rolls out.
+  if (saveError?.code === "PGRST202" && dishRatings.length === 0) {
+    const fallback = await supabase.from("logs").update(payload).eq("id", logId).eq("buyer_id", user.id).select("id").maybeSingle();
+    saveError = fallback.error ?? (fallback.data ? null : { message: "No review was saved." } as typeof saveError);
+  }
+  if (saveError) {
     if (uploaded.length) await supabase.storage.from("photos").remove(uploaded);
     return { ok: false, message: "Your review could not be saved. Your draft is still here; please try again." };
   }

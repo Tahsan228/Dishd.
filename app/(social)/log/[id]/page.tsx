@@ -5,6 +5,7 @@ import { ReviewAppreciation } from "@/components/social/review-appreciation";
 import { ReviewCard } from "@/components/social/review-card";
 import { ReviewComposer } from "@/components/social/review-composer";
 import { SocialNotice } from "@/components/social/social-notice";
+import { readPickupReview } from "@/lib/social/pickup-reviews";
 
 export default async function LogPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,6 +21,7 @@ export default async function LogPage({ params }: { params: Promise<{ id: string
   const log = result.data as unknown as ReviewEntry;
   const user = auth.data.user;
   const ownReview = user?.id === log.buyer_id;
+  const pickup = ownReview && log.order_id && user ? await readPickupReview(log.order_id, user.id) : null;
   const liked = user ? await supabase.from("log_likes").select("log_id").eq("log_id", id).eq("user_id", user.id).maybeSingle() : null;
 
   return <main className="mx-auto max-w-2xl space-y-6 px-5 py-8 sm:py-12">
@@ -27,7 +29,7 @@ export default async function LogPage({ params }: { params: Promise<{ id: string
     <div><p className="text-xs font-semibold uppercase tracking-widest text-brass-ink">The meal diary</p><h1 className="mt-2 font-display text-3xl sm:text-4xl">{log.kitchen ? `A meal from ${log.kitchen.name}` : "A meal to remember"}</h1></div>
     <ReviewCard review={log} />
     {!likes.error && !liked?.error ? <ReviewAppreciation logId={id} initialCount={likes.count ?? 0} initialLiked={!!liked?.data} signedIn={!!user} /> : <p className="text-sm text-ink-muted">Appreciations are temporarily unavailable.</p>}
-    {ownReview && log.is_verified && log.order_id && <ReviewComposer log={log} kitchen={log.kitchen} />}
+    {ownReview && log.is_verified && log.order_id && <ReviewComposer log={log} kitchen={log.kitchen} dishes={pickup?.dishRatingsAvailable ? pickup.dishes : []} />}
     {ownReview && !log.is_verified && <SocialNotice title="A note about this entry">This entry has no verified pickup. Completed orders create a verified entry automatically.</SocialNotice>}
     {/* Verified but with no order behind it: a seeded or imported entry. The
         composer writes through the order, so there is nothing to edit — say so

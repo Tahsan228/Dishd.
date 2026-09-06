@@ -36,6 +36,7 @@ export async function redeemReward(
 
   revalidatePath("/rewards");
   revalidatePath("/cart");
+  revalidatePath("/");
   return { ok: true, message: "Credit added. Apply it at checkout." };
 }
 
