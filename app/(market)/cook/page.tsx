@@ -7,12 +7,15 @@ import {
   TriangleAlert,
   Utensils,
   ReceiptText,
+  MessageSquare,
   ArrowRight,
 } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/market/site-header";
 import { OrderActions } from "@/components/market/order-actions-buttons";
 import { MenuAvailabilityToggle } from "@/components/market/menu-availability-toggle";
+import { KitchenAnalytics } from "@/components/market/kitchen-analytics";
+import { KitchenOpenControl } from "@/components/market/kitchen-controls";
 import { scoreKitchen, tierLabel } from "@/lib/social/credibility";
 import { DemoAd } from "@/components/market/demo-ad";
 import { formatCents, toStars } from "@/lib/utils";
@@ -170,6 +173,8 @@ export default async function CookDashboard() {
           ))}
         </dl>
 
+        <KitchenAnalytics kitchenId={kitchen.id} />
+
         {credibility.nextTier && (
           <p className="mt-2 text-center text-xs text-ink-muted">
             <span className="tabular">{credibility.pointsToNextTier}</span> points to{" "}
@@ -230,7 +235,18 @@ export default async function CookDashboard() {
                   )}
 
                   <p className="mt-3 text-sm text-ink-muted">Tip: {formatCents(o.tip_cents ?? 0)}{o.payment_method === "cash" && <> &middot; Dishd fee on collection: {formatCents(o.cash_fee_cents ?? 0)}</>}</p>
-                  <OrderActions orderId={o.id} status={o.status} />
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <OrderActions orderId={o.id} status={o.status} />
+                    {/* The thread lives on the order page, which the cook can
+                        open too — RLS lets both parties see it. */}
+                    <Link
+                      href={`/order/${o.id}`}
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-muted hover:border-forest hover:text-forest"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" aria-hidden />
+                      Message buyer
+                    </Link>
+                  </div>
                 </li>
               );
             })}
@@ -334,6 +350,13 @@ export default async function CookDashboard() {
           </ul>
         )}
         <DemoAd variant={1} />
+
+        <section className="mt-12 border-t border-line pt-8">
+          <KitchenOpenControl
+            isOpen={kitchen.status === "active"}
+            kitchenName={kitchen.name}
+          />
+        </section>
       </main>
     </>
   );

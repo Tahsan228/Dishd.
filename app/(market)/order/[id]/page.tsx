@@ -8,6 +8,8 @@ import { OrderReviewLink } from "@/components/social/order-review-link";
 import { ClearCartOnOrder } from "@/components/market/clear-cart-on-order";
 import { ReportDialog } from "@/components/social/report-dialog";
 import { OrderLiveRefresh } from "@/components/market/order-live-refresh";
+import { OrderChat } from "@/components/market/order-chat";
+import { loadOrderMessages } from "@/lib/market/chat-actions";
 import { DemoAd } from "@/components/market/demo-ad";
 import { formatCents } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/types";
@@ -66,6 +68,18 @@ export default async function OrderPage({
 
   const activeIndex = STEPS.findIndex((s) => s.key === order.status);
   const cancelled = order.status === "cancelled" || order.status === "declined";
+
+  // The thread. RLS already limits it to the two parties, so a viewer who is
+  // neither simply gets nothing back rather than a special case here.
+  const {
+    data: { user: viewer },
+  } = await supabase.auth.getUser();
+  const messages = viewer ? await loadOrderMessages(order.id) : [];
+
+  // The cook can open this page too, and RLS lets them. Reviewing and reporting
+  // belong to the buyer alone — a cook must not be offered "rate your meal" or
+  // "report a problem" against their own kitchen.
+  const isBuyer = viewer?.id === order.buyer_id;
 
   return (
     <>
@@ -134,6 +148,16 @@ export default async function OrderPage({
               {order.pickup_code}
             </p>
           </div>
+        )}
+
+        {viewer && (
+          <OrderChat
+            orderId={order.id}
+            viewerId={viewer.id}
+            otherName={kitchen.name}
+            initialMessages={messages}
+            live={!cancelled && order.status !== "completed"}
+          />
         )}
 
         <section className="mt-6 rounded-xl border border-line bg-surface p-4">
@@ -205,7 +229,7 @@ export default async function OrderPage({
             Waiting for {kitchen.name} to confirm.
           </p>
         )}
-        {order.status === "completed" && (
+        {order.status === "completed" && isBuyer && (
           <div className="mt-4">
             <p className="flex items-center gap-2 text-xs text-ink-muted">
               <ChefHat className="h-3.5 w-3.5" aria-hidden />

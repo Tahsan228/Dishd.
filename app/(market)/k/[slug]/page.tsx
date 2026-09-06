@@ -5,6 +5,7 @@ import { currentProfile } from "@/lib/market/auth-actions";
 import { MenuGrid } from "@/components/market/menu-grid";
 import { SiteHeader } from "@/components/market/site-header";
 import { KitchenCartSummary } from "@/components/market/kitchen-cart-summary";
+import { TrackKitchenView } from "@/components/market/track-kitchen-view";
 
 // Guest workstream (Codex) owns these three. They are stubs until then.
 // This file composes them and does not change.
@@ -39,6 +40,7 @@ export default async function KitchenPage({
   return (
     <>
       <SiteHeader />
+      <TrackKitchenView kitchenId={kitchen.id} />
 
       <main className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6">
         <div className="fade mt-4 aspect-[16/9] w-full overflow-hidden rounded-2xl bg-surface-sunk sm:aspect-[21/8] lg:aspect-[3/1]">
