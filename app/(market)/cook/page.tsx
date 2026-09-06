@@ -9,6 +9,8 @@ import {
   ReceiptText,
   MessageSquare,
   ArrowRight,
+  CalendarClock,
+  Zap,
 } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/market/site-header";
@@ -16,9 +18,16 @@ import { OrderActions } from "@/components/market/order-actions-buttons";
 import { MenuAvailabilityToggle } from "@/components/market/menu-availability-toggle";
 import { KitchenAnalytics } from "@/components/market/kitchen-analytics";
 import { KitchenOpenControl } from "@/components/market/kitchen-controls";
+import { OrderSettings } from "@/components/market/order-settings";
 import { scoreKitchen, tierLabel } from "@/lib/social/credibility";
 import { DemoAd } from "@/components/market/demo-ad";
 import { formatCents, toStars } from "@/lib/utils";
+import {
+  compareQueue,
+  formatCountdown,
+  formatPickupMoment,
+  isDueNow,
+} from "@/lib/market/order-timing";
 import type { KitchenCounters } from "@/lib/types";
 
 /**
@@ -46,7 +55,8 @@ export default async function CookDashboard() {
     .select(
       `id, name, slug, status, orders_completed, trust_streak, permit_status,
        avg_rating_10, distinct_customers, repeat_customers, upheld_flags,
-       open_incidents, cook_cancellations, created_at, revenue_cents`,
+       open_incidents, cook_cancellations, created_at, revenue_cents,
+       default_prep_minutes, priority_fee_cents, accepts_scheduled`,
     )
     .eq("owner_id", user.id)
     .maybeSingle();
@@ -99,6 +109,19 @@ export default async function CookDashboard() {
   ]);
 
   const live = ordersResult.data ?? [];
+
+  // A booking sits out of the live list until its cooking time begins. A 6pm
+  // order in a 10am queue is indistinguishable from something to cook now,
+  // which is the whole reason scheduling needed its own place on this page.
+  const now = new Date();
+  const defaultPrepMinutes = Number(kitchen.default_prep_minutes ?? 25);
+  const cookingNow = live
+    .filter((o) => isDueNow(o, now, defaultPrepMinutes))
+    .sort(compareQueue);
+  const upcoming = live
+    .filter((o) => !isDueNow(o, now, defaultPrepMinutes))
+    .sort((a, b) => String(a.scheduled_for).localeCompare(String(b.scheduled_for)));
+
   const batches = batchesResult.data ?? [];
   const menu = menuResult.data ?? [];
   const isDraft = kitchen.status !== "active";
@@ -117,6 +140,103 @@ export default async function CookDashboard() {
     },
     { label: "Repeat buyers", value: String(kitchen.repeat_customers) },
   ];
+
+  const orderCard = (o: (typeof live)[number]) => {
+    const buyer = o.profiles as unknown as { display_name: string; handle: string };
+    const items = (o.order_items ?? []) as unknown as { qty: number; name_snapshot: string }[];
+    const priorityCents = Number(o.priority_fee_cents ?? 0);
+    const scheduledFor = o.scheduled_for ? new Date(o.scheduled_for) : null;
+    const readyEstimate = o.ready_estimate_at ? new Date(o.ready_estimate_at) : null;
+
+    return (
+      <li key={o.id} className="rounded-xl border border-line bg-surface p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink">
+              {buyer?.display_name}
+              {/* Brass is what the design system uses for something earned or
+                  paid for, so a paid queue jump reads as one at a glance. */}
+              {priorityCents > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-brass/20 px-2 py-0.5 text-[11px] font-medium text-brass-ink">
+                  <Zap className="h-3 w-3 shrink-0" aria-hidden />
+                  Priority
+                </span>
+              )}
+            </p>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              {items.map((i) => `${i.qty} × ${i.name_snapshot}`).join(", ")}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="tabular text-sm font-medium text-forest">
+              {formatCents(o.subtotal_cents + priorityCents + (o.tip_cents ?? 0))}
+            </p>
+            <p className="text-xs text-ink-muted">
+              {o.payment_method === "cash" ? "Cash at pickup" : "Card"}
+            </p>
+          </div>
+        </div>
+
+        {scheduledFor && (
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-forest-soft px-3 py-2 text-xs text-forest">
+            <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>
+              Collecting{" "}
+              <span className="font-medium">{formatPickupMoment(scheduledFor, now)}</span> ·{" "}
+              {formatCountdown(scheduledFor, now)}
+            </span>
+          </p>
+        )}
+
+        {/* What the buyer has been told, so a cook can see the promise they are
+            working against rather than guessing at it. */}
+        {readyEstimate && !scheduledFor && o.status === "accepted" && (
+          <p className="mt-3 text-xs text-ink-muted">
+            You told them: ready by{" "}
+            <span className="font-medium text-ink">{formatPickupMoment(readyEstimate, now)}</span>{" "}
+            · {formatCountdown(readyEstimate, now)}
+          </p>
+        )}
+
+        {(o.status === "accepted" || o.status === "ready") && (
+          <p className="mt-3 rounded-lg bg-surface-sunk px-3 py-2 text-xs text-ink-muted">
+            Pickup code:{" "}
+            <span className="tabular font-display text-base tracking-widest text-forest">
+              {o.pickup_code}
+            </span>{" "}
+            — check it before marking collected.
+          </p>
+        )}
+
+        <p className="mt-3 text-sm text-ink-muted">
+          Tip: {formatCents(o.tip_cents ?? 0)}
+          {priorityCents > 0 && <> &middot; Priority: {formatCents(priorityCents)}</>}
+          {o.payment_method === "cash" && (
+            <> &middot; Dishd fee on collection: {formatCents(o.cash_fee_cents ?? 0)}</>
+          )}
+        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <OrderActions
+            orderId={o.id}
+            status={o.status}
+            prepMinutes={o.prep_minutes ?? null}
+            defaultPrepMinutes={defaultPrepMinutes}
+            scheduled={Boolean(scheduledFor)}
+          />
+          {/* The thread lives on the order page, which the cook can open too —
+              RLS lets both parties see it. */}
+          <Link
+            href={`/order/${o.id}`}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-muted hover:border-forest hover:text-forest"
+          >
+            <MessageSquare className="h-3.5 w-3.5" aria-hidden />
+            Message buyer
+          </Link>
+        </div>
+      </li>
+    );
+  };
 
   return (
     <>
@@ -187,70 +307,44 @@ export default async function CookDashboard() {
           <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
 
+        <OrderSettings
+          defaultPrepMinutes={defaultPrepMinutes}
+          priorityFeeCents={Number(kitchen.priority_fee_cents ?? 0)}
+          acceptsScheduled={kitchen.accepts_scheduled !== false}
+        />
+
         {/* ------------------------------------------------------ orders --- */}
         <h2 className="mt-8 font-display text-xl text-forest">
           Live orders{" "}
-          {live.length > 0 && <span className="tabular text-ink-muted">({live.length})</span>}
+          {cookingNow.length > 0 && (
+            <span className="tabular text-ink-muted">({cookingNow.length})</span>
+          )}
         </h2>
 
         {live.length === 0 ? (
           <p className="mt-3 rounded-xl border border-dashed border-line bg-surface-sunk p-8 text-center text-sm text-ink-muted">
             Nothing waiting. New orders appear here.
           </p>
+        ) : cookingNow.length === 0 ? (
+          <p className="mt-3 rounded-xl border border-dashed border-line bg-surface-sunk p-8 text-center text-sm text-ink-muted">
+            Nothing to cook right now. Your booked orders are below.
+          </p>
         ) : (
-          <ul className="stagger mt-3 space-y-3">
-            {live.map((o) => {
-              const buyer = o.profiles as unknown as { display_name: string; handle: string };
-              const items = (o.order_items ?? []) as unknown as {
-                qty: number;
-                name_snapshot: string;
-              }[];
-              return (
-                <li key={o.id} className="rounded-xl border border-line bg-surface p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-ink">{buyer?.display_name}</p>
-                      <p className="mt-0.5 text-xs text-ink-muted">
-                        {items.map((i) => `${i.qty} × ${i.name_snapshot}`).join(", ")}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="tabular text-sm font-medium text-forest">
-                        {formatCents(o.subtotal_cents + (o.tip_cents ?? 0))}
-                      </p>
-                      <p className="text-xs text-ink-muted">
-                        {o.payment_method === "cash" ? "Cash at pickup" : "Card"}
-                      </p>
-                    </div>
-                  </div>
+          <ul className="stagger mt-3 space-y-3">{cookingNow.map(orderCard)}</ul>
+        )}
 
-                  {(o.status === "accepted" || o.status === "ready") && (
-                    <p className="mt-3 rounded-lg bg-surface-sunk px-3 py-2 text-xs text-ink-muted">
-                      Pickup code:{" "}
-                      <span className="tabular font-display text-base tracking-widest text-forest">
-                        {o.pickup_code}
-                      </span>{" "}
-                      — check it before marking collected.
-                    </p>
-                  )}
-
-                  <p className="mt-3 text-sm text-ink-muted">Tip: {formatCents(o.tip_cents ?? 0)}{o.payment_method === "cash" && <> &middot; Dishd fee on collection: {formatCents(o.cash_fee_cents ?? 0)}</>}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <OrderActions orderId={o.id} status={o.status} />
-                    {/* The thread lives on the order page, which the cook can
-                        open too — RLS lets both parties see it. */}
-                    <Link
-                      href={`/order/${o.id}`}
-                      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-muted hover:border-forest hover:text-forest"
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" aria-hidden />
-                      Message buyer
-                    </Link>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+        {upcoming.length > 0 && (
+          <>
+            <h2 className="mt-8 flex items-center gap-2 font-display text-xl text-forest">
+              <CalendarClock className="h-5 w-5 shrink-0" aria-hidden />
+              Booked for later{" "}
+              <span className="tabular text-ink-muted">({upcoming.length})</span>
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              These move up into your live orders when it is time to start cooking.
+            </p>
+            <ul className="stagger mt-3 space-y-3">{upcoming.map(orderCard)}</ul>
+          </>
         )}
 
         <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-ink-muted">
