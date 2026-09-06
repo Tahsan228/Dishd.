@@ -74,6 +74,15 @@ export const addSourceSchema = z.object({
   certBody: z.string().trim().max(60).optional().default(""),
 });
 
+/** Portion sizes a home cook actually thinks in. */
+export const PORTION_SIZES = [
+  "Individual portion",
+  "Generous single",
+  "Shares between two",
+  "Family tray (3–4)",
+  "Party tray (6+)",
+] as const;
+
 export const menuItemSchema = z.object({
   name: z.string().trim().min(2, "Name the dish.").max(80),
   description: z.string().trim().max(400, "Keep it under 400 characters.").optional().default(""),
@@ -85,6 +94,43 @@ export const menuItemSchema = z.object({
   meatType: z.enum(["beef", "lamb", "chicken", "goat", "other", "none"]),
   allergens: z.array(z.string()).max(12),
   batchId: z.string().trim().optional().default(""),
+  /**
+   * Cook-declared, per portion. Blank means "not stated", which is honest —
+   * a home cook guessing a number is worse than saying nothing, and the menu
+   * renders the absence rather than a zero.
+   */
+  calories: z
+    .string()
+    .trim()
+    .optional()
+    .default("")
+    .refine(
+      (v) => v === "" || (/^\d{1,4}$/.test(v) && Number(v) <= 5000),
+      "Enter calories as a whole number up to 5000, or leave it blank.",
+    ),
+  /** Free text in the cook's own words. Allergens stay a structured field. */
+  ingredients: z
+    .string()
+    .trim()
+    .max(600, "Keep the ingredient list under 600 characters.")
+    .optional()
+    .default(""),
+  portionSize: z.string().trim().max(40).optional().default(""),
+  photoUrl: z
+    .string()
+    .trim()
+    .max(2048)
+    .optional()
+    .default("")
+    .refine((v) => {
+      if (!v) return true;
+      try {
+        const url = new URL(v);
+        return url.protocol === "https:" && !url.username && !url.password;
+      } catch {
+        return false;
+      }
+    }, "Use a public https:// image link, or upload a photo instead."),
 });
 
 /**

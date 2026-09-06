@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MapPinned, RotateCcw } from "lucide-react";
 import type { KitchenPublic, ProfilePublic } from "@/lib/types";
 import { createServerClient } from "@/lib/supabase/server";
+import { rankByDistance, resolveLocation } from "@/lib/market/nearby";
 import { SiteHeader } from "@/components/market/site-header";
 import { BuyerSummary } from "@/components/market/buyer-summary";
 import { KitchenBrowser } from "@/components/market/kitchen-browser";
@@ -42,11 +43,18 @@ async function orderAgainKitchens(
 export async function BuyerHome({
   profile,
   kitchens,
+  near,
 }: {
   profile: ProfilePublic;
   kitchens: KitchenPublic[];
+  /** A town or ZIP typed into the location search, if any. */
+  near?: string;
 }) {
   const again = await orderAgainKitchens(profile.id, kitchens);
+
+  // Someone signed in gets the same distance ranking as a first-time visitor.
+  const location = near ? resolveLocation(near) : null;
+  const ordered = location ? rankByDistance(kitchens, location.point) : kitchens;
 
   return (
     <>
@@ -90,7 +98,7 @@ export async function BuyerHome({
                 </p>
               </div>
             ) : (
-              <KitchenBrowser kitchens={kitchens} />
+              <KitchenBrowser kitchens={ordered} />
             )}
           </div>
         </section>

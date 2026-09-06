@@ -56,6 +56,10 @@ export type MenuItemWithProvenance = {
   meat_type: string;
   allergens: string[];
   is_available: boolean;
+  /** Cook-declared, per portion. Null means not stated, which the menu shows. */
+  calories: number | null;
+  ingredients: string | null;
+  portion_size: string | null;
   sourcing_batches: {
     match_status: string;
     ocr_store: string | null;
@@ -75,7 +79,7 @@ export async function getKitchenMenu(kitchenId: string): Promise<MenuItemWithPro
       .from("menu_items")
       .select(
         `id, name, description, price_cents, photo_url, contains_meat, meat_type,
-         allergens, is_available,
+         allergens, is_available, calories, ingredients, portion_size,
          sourcing_batches ( match_status, ocr_store, ocr_date, reviewed_at,
                             mismatch_reasons,
                             halal_sources ( store_name, cert_body ) )`,

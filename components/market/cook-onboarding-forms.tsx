@@ -12,9 +12,11 @@ import {
   ALLERGENS,
   COUNTIES,
   MEAT_TYPES,
+  PORTION_SIZES,
   type CookActionState,
 } from "@/lib/market/cook-onboarding";
 import { findJurisdiction } from "@/lib/market/jurisdictions";
+import { PHOTO_ACCEPT } from "@/lib/social/review-validation";
 import { cn } from "@/lib/utils";
 
 const initial: CookActionState = { ok: false, message: "" };
@@ -284,7 +286,12 @@ export function MenuItemForm({
     meatType: "chicken",
     batchId: batches[0]?.id ?? "",
     allergens: [] as string[],
+    calories: "",
+    ingredients: "",
+    portionSize: "",
+    photoUrl: "",
   });
+  const [photoName, setPhotoName] = useState("");
 
   const toggleAllergen = (a: string) =>
     setV({
@@ -307,6 +314,10 @@ export function MenuItemForm({
               meatType: "chicken",
               batchId: batches[0]?.id ?? "",
               allergens: ["dairy", "tree_nuts"],
+              calories: "780",
+              ingredients: "Basmati rice, chicken thigh, yoghurt, fried onion, saffron, cashew, ghee, garam masala.",
+              portionSize: PORTION_SIZES[1],
+              photoUrl: "",
             })
           }
         />
@@ -371,6 +382,89 @@ export function MenuItemForm({
       )}
 
       {!v.containsMeat && <input type="hidden" name="meatType" value="none" />}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-xs font-medium text-ink">
+            Portion size <span className="font-normal text-ink-muted">(optional)</span>
+          </span>
+          <select
+            name="portionSize"
+            value={v.portionSize}
+            onChange={(e) => setV({ ...v, portionSize: e.target.value })}
+            className={field}
+          >
+            <option value="">Not stated</option>
+            {PORTION_SIZES.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-xs font-medium text-ink">
+            Calories per portion <span className="font-normal text-ink-muted">(optional)</span>
+          </span>
+          <input
+            name="calories"
+            inputMode="numeric"
+            placeholder="780"
+            value={v.calories}
+            onChange={(e) => setV({ ...v, calories: e.target.value })}
+            className={field}
+          />
+          <Err state={state} name="calories" />
+        </label>
+      </div>
+
+      <label className="block">
+        <span className="text-xs font-medium text-ink">
+          Ingredients <span className="font-normal text-ink-muted">(optional)</span>
+        </span>
+        <textarea
+          name="ingredients"
+          rows={3}
+          maxLength={600}
+          placeholder="Basmati rice, chicken thigh, yoghurt, fried onion…"
+          value={v.ingredients}
+          onChange={(e) => setV({ ...v, ingredients: e.target.value })}
+          className={cn(field, "resize-y")}
+        />
+        <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
+          Shown to buyers as your own words. Dishd does not calculate calories or
+          check ingredients — declare allergens below as well, since that is the
+          field buyers filter on.
+        </span>
+        <Err state={state} name="ingredients" />
+      </label>
+
+      <div>
+        <span className="text-xs font-medium text-ink">
+          Dish photo <span className="font-normal text-ink-muted">(optional)</span>
+        </span>
+        <input
+          name="photoFile"
+          type="file"
+          accept={PHOTO_ACCEPT}
+          capture="environment"
+          onChange={(e) => setPhotoName(e.target.files?.[0]?.name ?? "")}
+          className="mt-2 block w-full text-sm text-ink-muted file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-forest file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-cream hover:file:bg-forest-deep"
+        />
+        {photoName && <p className="mt-1 text-xs text-forest">Attached: {photoName}</p>}
+        <label className="mt-3 block text-xs text-ink-muted">
+          Or paste a link to a photo you have already uploaded
+          <input
+            name="photoUrl"
+            type="url"
+            placeholder="https://…"
+            value={v.photoUrl}
+            onChange={(e) => setV({ ...v, photoUrl: e.target.value })}
+            className={field}
+          />
+        </label>
+        <Err state={state} name="photoUrl" />
+        <Err state={state} name="photoFile" />
+      </div>
 
       <fieldset>
         <legend className="text-xs font-medium text-ink">Allergens</legend>

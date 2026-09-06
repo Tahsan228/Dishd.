@@ -1,4 +1,4 @@
-import { ShieldCheck, Clock, TriangleAlert, Info } from "lucide-react";
+import { ShieldCheck, Clock, TriangleAlert, Info, Flame, Utensils } from "lucide-react";
 import { getKitchenMenu, type MenuItemWithProvenance } from "@/lib/market/kitchens";
 import { AddToCart } from "@/components/market/add-to-cart";
 import { formatCents } from "@/lib/utils";
@@ -136,6 +136,23 @@ export async function MenuGrid({
               <p className="mt-1 text-sm leading-relaxed text-ink-muted">{item.description}</p>
             )}
 
+            {(item.portion_size || item.calories !== null) && (
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
+                {item.portion_size && (
+                  <span className="flex items-center gap-1">
+                    <Utensils className="h-3.5 w-3.5" aria-hidden />
+                    {item.portion_size}
+                  </span>
+                )}
+                {item.calories !== null && (
+                  <span className="tabular flex items-center gap-1">
+                    <Flame className="h-3.5 w-3.5" aria-hidden />
+                    {item.calories} kcal
+                  </span>
+                )}
+              </p>
+            )}
+
             <p className="mt-3 flex items-start gap-1.5 text-xs text-ink-muted">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>
@@ -143,6 +160,25 @@ export async function MenuGrid({
                 {item.allergens.map((a) => ALLERGEN_LABEL[a] ?? a).join(", ")}
               </span>
             </p>
+
+            {/* The cook's own words. Attributed, and never presented as
+                anything Dishd measured — a calorie count we invented sitting
+                beside a real allergen list would be the most dangerous thing
+                on this page. */}
+            {item.ingredients && (
+              <details className="mt-2 rounded-lg border border-line bg-surface-sunk">
+                <summary className="cursor-pointer list-none px-2.5 py-2 text-xs font-medium text-ink">
+                  Ingredients, as listed by the cook
+                </summary>
+                <p className="border-t border-line px-2.5 py-2 text-xs leading-relaxed text-ink-muted">
+                  {item.ingredients}
+                  <span className="mt-1.5 block text-[11px]">
+                    Declared by the cook. Dishd does not verify ingredients or
+                    calculate calories.
+                  </span>
+                </p>
+              </details>
+            )}
 
             {item.contains_meat && item.sourcing_batches && (
               <Provenance batch={item.sourcing_batches} />

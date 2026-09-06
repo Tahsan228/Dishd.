@@ -11,6 +11,7 @@ import {
   permitSchema,
   type CookActionState,
 } from "@/lib/market/cook-onboarding";
+import { photoExtension, photoFileError } from "@/lib/social/review-validation";
 
 /**
  * Cook onboarding.
@@ -167,7 +168,13 @@ export async function addHalalSource(
   return { ok: true, message: `${parsed.data.storeName} registered.` };
 }
 
-/** Step 5 — a dish. Meat needs a verified batch; the database agrees. */
+/**
+ * Add a dish. Meat needs a verified batch; the database agrees.
+ *
+ * Calories and ingredients are recorded as the cook's own claim and shown to
+ * buyers as such. Dishd never computes either — a number we invented sitting
+ * next to a real allergen list would be the most dangerous thing on the page.
+ */
 export async function addMenuItem(
   _prev: CookActionState,
   form: FormData,
@@ -180,6 +187,10 @@ export async function addMenuItem(
     meatType: form.get("meatType") ?? "none",
     allergens: form.getAll("allergens").map(String),
     batchId: form.get("batchId") ?? "",
+    calories: form.get("calories") ?? "",
+    ingredients: form.get("ingredients") ?? "",
+    portionSize: form.get("portionSize") ?? "",
+    photoUrl: form.get("photoUrl") ?? "",
   });
   if (!parsed.success) {
     return { ok: false, message: "Check the dish details.", errors: fieldErrors(parsed.error.issues) };
@@ -198,6 +209,27 @@ export async function addMenuItem(
     };
   }
 
+  // A dish photo, if one was attached. Uploaded as the cook so storage records
+  // them as owner; a pasted link still works for anything already hosted.
+  let photo = v.photoUrl;
+  const upload = form.get("photoFile");
+  if (upload instanceof File && upload.size > 0) {
+    const problem = photoFileError(upload);
+    if (problem) return { ok: false, message: problem, errors: { photoFile: problem } };
+    const path = `dishes/${kitchen.id}/${crypto.randomUUID()}.${photoExtension(upload.type)}`;
+    const { error: uploadError } = await supabase.storage
+      .from("photos")
+      .upload(path, upload, { contentType: upload.type, upsert: false });
+    if (uploadError) {
+      return {
+        ok: false,
+        message: "That photo could not be uploaded. Try again, or leave it out.",
+        errors: { photoFile: uploadError.message },
+      };
+    }
+    photo = supabase.storage.from("photos").getPublicUrl(path).data.publicUrl;
+  }
+
   const { error } = await supabase.from("menu_items").insert({
     kitchen_id: kitchen.id,
     name: v.name,
@@ -208,12 +240,63 @@ export async function addMenuItem(
     sourcing_batch_id: v.containsMeat ? v.batchId : null,
     allergens: v.allergens.length > 0 ? v.allergens : ["none_declared"],
     is_available: true,
+    calories: v.calories === "" ? null : Number(v.calories),
+    ingredients: v.ingredients || null,
+    portion_size: v.portionSize || null,
+    photo_url: photo || null,
   });
   if (error) return { ok: false, message: error.message };
 
   revalidatePath("/cook/start");
   revalidatePath("/cook");
+  revalidatePath("/cook/menu");
+  revalidatePath(`/k/${kitchen.slug}`);
   return { ok: true, message: `${v.name} added to your menu.` };
+}
+
+/** Remove a dish. Past orders keep their own name and price snapshot. */
+export async function deleteMenuItem(itemId: string): Promise<CookActionState> {
+  const { supabase, user } = await requireUser();
+  const kitchen = await ownedKitchen(supabase, user.id);
+  if (!kitchen) return { ok: false, message: "No kitchen." };
+
+  const { error } = await supabase
+    .from("menu_items")
+    .delete()
+    .eq("id", itemId)
+    .eq("kitchen_id", kitchen.id);
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/cook/menu");
+  revalidatePath("/cook");
+  revalidatePath(`/k/${kitchen.slug}`);
+  return { ok: true, message: "Dish removed." };
+}
+
+/** Close the kitchen, or reopen one the cook closed themselves. */
+export async function setKitchenOpen(
+  open: boolean,
+  reason = "",
+): Promise<CookActionState> {
+  const { supabase, user } = await requireUser();
+  const kitchen = await ownedKitchen(supabase, user.id);
+  if (!kitchen) return { ok: false, message: "No kitchen." };
+
+  const { error } = open
+    ? await supabase.rpc("dishd_reopen_kitchen", { p_kitchen: kitchen.id })
+    : await supabase.rpc("dishd_close_kitchen", { p_kitchen: kitchen.id, p_reason: reason });
+
+  // The function raises readable messages ("Finish or decline your open
+  // orders…"), so pass them through rather than replacing them.
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/cook");
+  revalidatePath("/");
+  revalidatePath(`/k/${kitchen.slug}`);
+  return {
+    ok: true,
+    message: open ? "Your kitchen is open again." : "Your kitchen is closed.",
+  };
 }
 
 /** Step 6 — open for orders. */

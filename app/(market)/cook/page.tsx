@@ -302,10 +302,10 @@ export default async function CookDashboard() {
             {menu.length > 0 && <span className="tabular text-sm text-ink-muted">({menu.length})</span>}
           </h2>
           <Link
-            href="/cook/start"
+            href="/cook/menu"
             className="text-xs text-forest underline-offset-2 hover:underline"
           >
-            Add a dish
+            Manage menu
           </Link>
         </div>
 
