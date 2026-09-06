@@ -21,47 +21,48 @@ export async function BuyerSummary({ profile }: { profile: ProfilePublic }) {
     .maybeSingle();
 
   const counters = data as BuyerCounters | null;
-  const { score, tier } = counters
-    ? scoreBuyer(counters)
-    : { score: 0, tier: "newcomer" as const };
+  return <BuyerSummaryPreview profile={profile} counters={counters} />;
+}
+
+/** The same layout renders immediately while the private counters load. */
+export function BuyerSummaryPreview({ profile, counters }: { profile: ProfilePublic; counters?: BuyerCounters | null }) {
+  const standing = counters ? scoreBuyer(counters) : null;
 
   const stats = [
-    { label: "Meals logged", value: counters?.verified_logs ?? 0, icon: Utensils },
-    { label: "Kitchens tried", value: counters?.distinct_kitchens ?? 0, icon: MapPin },
-    { label: "Reviews written", value: counters?.substantive_reviews ?? 0, icon: Star },
+    { label: "Meals logged", value: counters?.verified_logs, icon: Utensils },
+    { label: "Kitchens tried", value: counters?.distinct_kitchens, icon: MapPin },
+    { label: "Reviews written", value: counters?.substantive_reviews, icon: Star },
   ];
 
   const initial = (profile.display_name || profile.handle).charAt(0).toUpperCase();
 
   return (
-    <section className="rise mt-6 overflow-hidden rounded-2xl border border-line bg-surface">
-      <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-        <div className="flex items-center gap-4">
+    <section aria-label="Your profile preview" className="rise overflow-hidden rounded-2xl border border-forest/15 bg-surface shadow-sm">
+      <div className="flex flex-col gap-5 bg-forest-soft/40 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="flex min-w-0 items-center gap-4">
           <span
             aria-hidden
-            className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-forest font-display text-2xl text-cream"
+            className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-forest font-display text-2xl text-cream ring-4 ring-surface"
           >
             {profile.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+              <img src={profile.avatar_url} alt="" width={56} height={56} decoding="async" className="h-full w-full object-cover" />
             ) : (
               initial
             )}
           </span>
 
           <div className="min-w-0">
-            <p className="text-xs text-ink-muted">Welcome back</p>
+            <p className="text-sm text-ink-muted">Welcome back</p>
             <h2 className="truncate font-display text-2xl leading-tight text-forest">
-              {profile.display_name}
+              {profile.display_name || profile.handle}
             </h2>
-            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-muted">
-              <span>@{profile.handle}</span>
-              <span aria-hidden>·</span>
-              {/* Brass is the earned colour, and brass-ink is the readable
-                  weight of it at this size. */}
-              <span className="font-medium text-brass-ink">{tierLabel(tier)}</span>
-              <span aria-hidden>·</span>
-              <span className="tabular">{score} pts</span>
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+              <span className="break-all">@{profile.handle}</span>
+              {standing ? <>
+                <span className="rounded-full border border-brass/20 bg-brass/10 px-2.5 py-1 font-medium text-brass-ink">{tierLabel(standing.tier)}</span>
+                <span className="tabular">{standing.score.toLocaleString()} credibility score</span>
+              </> : <span role="status">{counters === undefined ? "Loading your food diary…" : "Diary stats temporarily unavailable"}</span>}
             </p>
           </div>
         </div>
@@ -77,12 +78,12 @@ export async function BuyerSummary({ profile }: { profile: ProfilePublic }) {
 
       <dl className="grid grid-cols-3 divide-x divide-line border-t border-line">
         {stats.map(({ label, value, icon: Icon }) => (
-          <div key={label} className="px-3 py-3.5 text-center sm:px-4">
-            <dt className="flex items-center justify-center gap-1.5 text-[11px] text-ink-muted">
-              <Icon className="h-3.5 w-3.5" aria-hidden />
-              <span className="truncate">{label}</span>
+          <div key={label} className="px-2 py-4 text-center sm:px-4">
+            <dt className="flex flex-col items-center justify-center gap-1.5 text-xs text-ink-muted sm:flex-row">
+              <Icon className="h-4 w-4 shrink-0 text-forest" aria-hidden />
+              <span>{label}</span>
             </dt>
-            <dd className="tabular mt-1 font-display text-2xl text-forest">{value}</dd>
+            <dd className="tabular mt-2 text-2xl font-semibold text-forest">{value?.toLocaleString() ?? "—"}</dd>
           </div>
         ))}
       </dl>

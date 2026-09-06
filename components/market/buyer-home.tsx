@@ -9,6 +9,7 @@ import { getRewardSummary } from "@/lib/market/reward-summary";
 import { resolveLocation } from "@/lib/market/nearby";
 import { newYorkDate } from "@/lib/market/discovery";
 import { PendingPickupReviews } from "@/components/social/pending-pickup-reviews";
+import { BuyerSummary, BuyerSummaryPreview } from "@/components/market/buyer-summary";
 
 async function BuyerPoints({ id }: { id: string }) {
   const points = await getRewardSummary(id);
@@ -24,8 +25,9 @@ async function HomeDiscovery({ kitchens, profile, near }: { kitchens: KitchenPub
 }
 export function BuyerHome({ profile, kitchens, near }: { profile: ProfilePublic; kitchens: KitchenPublic[]; near?: string }) {
   return <><SiteHeader /><main className="mx-auto w-full max-w-7xl px-4 pb-20 pt-7 sm:px-6">
-    <div className="flex flex-wrap items-start justify-between gap-5">
-      <div><p className="text-sm text-ink-muted">Good food, close to home. Welcome back, <strong className="font-semibold text-forest">{profile.display_name.split(" ")[0]}</strong>.</p>
+    <Suspense fallback={<BuyerSummaryPreview profile={profile} />}><BuyerSummary profile={profile} /></Suspense>
+    <div className="mt-8 flex flex-wrap items-start justify-between gap-5">
+      <div><p className="text-sm text-ink-muted">Good food, close to home.</p>
         <h1 className="mt-3 max-w-2xl font-display text-4xl leading-tight text-forest sm:text-5xl">What&apos;s cooking near me?</h1>
         <p className="mt-3 max-w-xl text-base text-ink-muted">Tonight&apos;s dinner. A new favorite. A meal for everyone at the table.</p></div>
       <Suspense fallback={<Link href="/rewards" className="rounded-2xl bg-brass/10 px-5 py-4 text-sm text-forest">Your Neighborhood Points</Link>}><BuyerPoints id={profile.id} /></Suspense>

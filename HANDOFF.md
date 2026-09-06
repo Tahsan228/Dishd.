@@ -205,3 +205,10 @@ breaking:
   on the order page while it is open.
 - A cook can revise the estimate but there is no record of having done so, so a
   kitchen that habitually slips cannot be told apart from one that does not.
+
+## Profile preview restoration (Codex, 2026-09-06)
+
+- At the user's request, restored the original BuyerSummary card at the top of signed-in home: avatar/name/handle/tier on the left, profile button on the right at desktop widths, and the same three-column stats row underneath. The newer discovery sections remain below it.
+- Light polish only: subtle forest tint, avatar ring, clearer tier badge, readable stat values and mobile spacing. Credibility is explicitly labeled as a score, with spendable Neighborhood Points still separate. Credibility formulas are unchanged.
+- The same card shell appears immediately while its counters stream in; failed reads show unavailable stats rather than fabricated zeroes.
+- TypeScript and scoped ESLint pass. Browser checks at 390px and 1280px confirm no page overflow, all three stats remain in one row, profile navigation works, discovery sections remain, and no browser page errors. No live data was changed. Existing untracked supabase/.temp/ belongs to other local tooling and was left untouched.
