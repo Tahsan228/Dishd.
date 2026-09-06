@@ -79,21 +79,29 @@ export default async function BuyerProfilePage({ params, searchParams }: {
 
       {/* Positioned instead, so the overlap resolves in this direction. */}
       <div className="relative z-10 p-5 sm:p-8">
-        {/* Pulled up over the banner. items-end keeps the name on the baseline
-            of the avatar instead of floating beside its middle. */}
-        <div className="-mt-16 flex flex-wrap items-end gap-4 sm:-mt-20">
+        {/* Only the avatar and the tier mark overlap the banner, and both carry
+            their own opaque ground — the avatar its border-4 ring, the tier mark
+            its filled pill — so they stay legible over any uploaded image.
+
+            The name deliberately does NOT sit here. On the baseline of a 96px
+            avatar it painted across the bottom of the banner, and forest ink on
+            somebody's photograph is a coin toss: dark ink on a dark picture is
+            simply unreadable, and no banner is under our control. Dropping it
+            below the overlap puts it back on the surface ground the palette was
+            designed against, which fixes every banner rather than most of them. */}
+        <div className="-mt-16 flex flex-wrap items-end justify-between gap-4 sm:-mt-20">
           {avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatar} alt="" width={96} height={96} referrerPolicy="no-referrer" className="size-20 shrink-0 rounded-full border-4 border-surface bg-forest-soft object-cover sm:size-24" />
           ) : <span aria-hidden="true" className="flex size-20 shrink-0 items-center justify-center rounded-full border-4 border-surface bg-forest-soft font-display text-3xl text-forest sm:size-24">{profile.display_name.slice(0, 1)}</span>}
 
-          {/* min-w-0 lets a long name wrap instead of pushing the tier mark
-              out of the card, which is what was breaking the layout. */}
-          <div className="min-w-0 flex-1 basis-64">
-            <h1 className="font-display text-3xl break-words sm:text-4xl">{profile.display_name}</h1>
-            <p className="mt-1 text-sm break-all text-ink-muted">@{profile.handle}</p>
-          </div>
           {credibility && <div className="shrink-0"><TierMark tier={credibility.tier} /></div>}
+        </div>
+
+        {/* min-w-0/break-words let a long name wrap instead of widening the card. */}
+        <div className="mt-4 min-w-0">
+          <h1 className="font-display text-3xl break-words sm:text-4xl">{profile.display_name}</h1>
+          <p className="mt-1 text-sm break-all text-ink-muted">@{profile.handle}</p>
         </div>
 
         {profile.tagline && (
