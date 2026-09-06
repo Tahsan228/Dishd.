@@ -50,18 +50,32 @@ export async function placeOrder(_prev: PlaceOrderState, form: FormData): Promis
   try {
     const admin=createServiceClient();
     const h=await headers();
-    const {data,error}=await admin.rpc('dishd_place_order',{
+    const core={
       p_buyer:user.id,p_kitchen:kitchenId,p_lines:wanted,p_method:method,p_tip_cents:tipCents,
       p_reward:String(form.get('rewardId')??'')||null,p_ack_version:ACK_VERSION,
-      p_acks:ACKNOWLEDGMENTS.map(a=>a.key),p_ip:h.get('x-forwarded-for')?.split(',')[0]?.trim()??null,p_agent:h.get('user-agent'),
-      // The price of priority is read from the kitchen inside the RPC. Sending
-      // only the intent means a crafted form cannot name its own fee.
-      p_priority:wantsPriority,p_scheduled_for:scheduledFor?scheduledFor.toISOString():null
-    });
-    if(error || !data?.[0]) return {error:error && ['PGRST202','42883','42703'].includes(error.code)
-      ? 'Ordering is temporarily unavailable while payments are being updated. Your cart is still here.'
+      p_acks:ACKNOWLEDGMENTS.map(a=>a.key),p_ip:h.get('x-forwarded-for')?.split(',')[0]?.trim()??null,p_agent:h.get('user-agent')
+    };
+    // The price of priority is read from the kitchen inside the RPC. Sending
+    // only the intent means a crafted form cannot name its own fee.
+    let {data,error}=await admin.rpc('dishd_place_order',{...core,
+      p_priority:wantsPriority,p_scheduled_for:scheduledFor?scheduledFor.toISOString():null});
+
+    // A database still on 0014 has no such signature. Ordinary orders fall back
+    // to the older one rather than failing, so a pending migration costs the
+    // features and not the shop. An order that actually asked for priority or a
+    // booked slot is refused instead: placing it silently without what the buyer
+    // chose would be worse than not placing it.
+    const missingSignature=(code?:string)=>Boolean(code && ['PGRST202','42883','42703'].includes(code));
+    if(missingSignature(error?.code) && !wantsPriority && !scheduledFor) {
+      ({data,error}=await admin.rpc('dishd_place_order',core));
+    }
+    if(error || !data?.[0]) return {error:missingSignature(error?.code)
+      ? (wantsPriority || scheduledFor
+        ? 'Scheduled and priority orders are not switched on yet. Order as soon as possible instead, or try again later.'
+        : 'Ordering is temporarily unavailable while payments are being updated. Your cart is still here.')
       : error?.message??'Could not place the order. Please try again.'};
-    const order=data[0] as {order_id:string;subtotal_cents:number;discount_cents:number;kitchen_name:string;tip_cents:number;priority_fee_cents:number};
+    const order=data[0] as {order_id:string;subtotal_cents:number;discount_cents:number;kitchen_name:string;tip_cents:number;priority_fee_cents?:number};
+    const priorityCents=Number(order.priority_fee_cents??0);
     destination='/order/'+order.order_id;
     if(method==='card') {
       try {
@@ -69,7 +83,7 @@ export async function placeOrder(_prev: PlaceOrderState, form: FormData): Promis
           lines:[{name:'Pickup from '+order.kitchen_name+(order.discount_cents?' (reward applied)':''),unitAmountCents:order.subtotal_cents,qty:1},
             // Itemised rather than folded into the food line, so the card
             // statement shows what the extra charge actually bought.
-            ...(order.priority_fee_cents?[{name:'Priority order',unitAmountCents:order.priority_fee_cents,qty:1}]:[]),
+            ...(priorityCents?[{name:'Priority order',unitAmountCents:priorityCents,qty:1}]:[]),
             ...(order.tip_cents?[{name:'Tip for the kitchen',unitAmountCents:order.tip_cents,qty:1}]:[])]});
         const saved=await admin.from('orders').update({stripe_session_id:session.id}).eq('id',order.order_id);
         if(saved.error || !session.url) throw new Error('Checkout could not be saved.');

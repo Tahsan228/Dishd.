@@ -26,10 +26,11 @@ export async function loadKitchenTerms(kitchenId: string): Promise<KitchenTerms 
     .eq("id", kitchenId)
     .maybeSingle();
 
-  // A deployment whose database has not run 0015 yet returns "column does not
-  // exist". Falling back to the plainest possible terms keeps checkout working
-  // instead of taking the cart down over an upsell.
-  if (error || !data) return { priorityFeeCents: 0, acceptsScheduled: false, defaultPrepMinutes: 25 };
+  // A deployment whose database has not run 0015 yet answers "column does not
+  // exist". Returning null hides both offers rather than taking the cart down
+  // over an upsell — and rather than telling the buyer this kitchen has stopped
+  // taking bookings, which would be a false statement about the cook.
+  if (error || !data) return null;
 
   return {
     priorityFeeCents: Number(data.priority_fee_cents ?? 0),
