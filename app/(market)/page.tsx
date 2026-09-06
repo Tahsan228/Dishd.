@@ -77,64 +77,99 @@ export default async function DiscoveryPage({
     <>
       <SiteHeader />
 
-      <main className="pb-24">
+      <main className="pb-20">
         {/* ------------------------------------------------------------ hero */}
         <section className="relative overflow-hidden border-b border-line bg-forest">
-          {/* A warm photographic ground, dimmed hard so the type stays legible
-              at AA rather than relying on the image being kind. */}
-          <div aria-hidden className="absolute inset-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=1600&q=70"
-              alt=""
-              className="h-full w-full object-cover opacity-[0.18]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-forest/70 via-forest/85 to-forest" />
-          </div>
+          {/* A single soft warm wash rather than a photo behind the type. The
+              photo lives in its own column to the right, so nothing competes
+              with the words for contrast. */}
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-[radial-gradient(120%_80%_at_15%_0%,color-mix(in_oklab,var(--color-brass)_18%,transparent),transparent_60%)]"
+          />
 
-          <div className="rise relative mx-auto w-full max-w-7xl px-4 pt-14 pb-16 sm:px-6 lg:pt-20 lg:pb-20">
-            <p className="flex items-center gap-2 text-xs font-medium tracking-[0.14em] text-brass uppercase">
-              <MapPinned className="h-3.5 w-3.5" aria-hidden />
-              Bergen County &middot; New Jersey
-            </p>
+          <div className="rise relative mx-auto grid w-full max-w-7xl items-center gap-10 px-4 pt-10 pb-12 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14 lg:pt-14 lg:pb-16">
+            {/* Copy column. Measure is capped near 60 characters so lines break
+                where the eye expects rather than running the full page width. */}
+            <div className="max-w-xl">
+              <p className="flex items-center gap-2 text-xs font-medium tracking-[0.14em] text-brass uppercase">
+                <MapPinned className="h-3.5 w-3.5" aria-hidden />
+                Bergen County &middot; New Jersey
+              </p>
 
-            <h1 className="mt-4 max-w-4xl font-display text-[2.75rem] leading-[1.05] text-cream sm:text-6xl lg:text-7xl">
-              Home cooks,
-              <br />
-              <em className="italic text-brass">properly</em> vouched for.
-            </h1>
+              <h1 className="mt-3 font-display text-[2.5rem] leading-[1.06] text-cream sm:text-5xl lg:text-6xl">
+                Home cooks,
+                <br />
+                <em className="italic text-brass">properly</em> vouched for.
+              </h1>
 
-            <p className="mt-6 max-w-2xl text-base leading-relaxed text-cream/80 sm:text-lg">
-              Halal meals cooked by neighbours in their own kitchens, collected
-              from their door. Every meat dish is backed by a purchase receipt
-              you can open and read, and every rating comes from someone who
-              actually picked the food up.
-            </p>
+              <p className="mt-4 text-base leading-relaxed text-cream/85 sm:text-lg">
+                Halal meals cooked by neighbours in their own kitchens, collected
+                from their door — every meat dish backed by a receipt you can
+                actually read.
+              </p>
 
-            <div className="mt-8 max-w-2xl">
-              <LocationSearch initial={near ?? ""} />
+              <div className="mt-6">
+                <LocationSearch initial={near ?? ""} />
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-center gap-2.5">
+                <Link
+                  href="/signup"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-full bg-brass px-6 py-3 text-sm font-semibold text-forest transition-colors hover:bg-brass/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
+                >
+                  Create your account
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+                <Link
+                  href="/signin"
+                  className="inline-flex min-h-12 items-center rounded-full border border-cream/35 px-5 py-3 text-sm font-medium text-cream transition-colors hover:bg-cream/10"
+                >
+                  Sign in
+                </Link>
+              </div>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/signup"
-                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-brass px-6 py-3 text-sm font-semibold text-forest transition-colors hover:bg-brass/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
-              >
-                Create your account
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-              <Link
-                href="/signin"
-                className="inline-flex min-h-12 items-center rounded-full border border-cream/35 px-6 py-3 text-sm font-medium text-cream transition-colors hover:bg-cream/10"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/community"
-                className="inline-flex min-h-12 items-center gap-2 px-2 py-3 text-sm font-medium text-cream/75 underline-offset-4 transition-colors hover:text-cream hover:underline"
-              >
-                See what people are eating
-              </Link>
+            {/* Dish column. Hidden below lg: at phone width a decorative photo
+                would push the search box under the fold, which is the one thing
+                the hero exists to show. */}
+            <div className="relative hidden lg:block">
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-forest-deep shadow-2xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=1100&q=75"
+                  alt="Kabuli pulao served from a home kitchen"
+                  className="h-full w-full object-cover"
+                />
+                <div
+                  aria-hidden
+                  className="absolute inset-0 bg-gradient-to-t from-forest/70 via-transparent to-transparent"
+                />
+
+                <figcaption className="absolute inset-x-5 bottom-5 flex items-center gap-3 rounded-2xl bg-cream/95 p-3.5 backdrop-blur-sm">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-forest">
+                    <ShieldCheck className="h-4.5 w-4.5 text-cream" aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-ink">
+                      Kabuli Pulao &middot; Amina&rsquo;s Kitchen
+                    </span>
+                    <span className="block text-xs text-ink-muted">
+                      Lamb from Al-Khayam Halal Meat &middot; receipt verified
+                    </span>
+                  </span>
+                </figcaption>
+              </div>
+
+              {/* A small earned-tier marker, offset so the composition is not a
+                  plain rectangle. */}
+              <div className="absolute -top-3 -left-5 rounded-2xl border border-brass/40 bg-cream px-4 py-3 shadow-lg">
+                <p className="tabular font-display text-2xl leading-none text-forest">4.8</p>
+                <p className="mt-1 flex items-center gap-1 text-[11px] text-brass-ink">
+                  <Star className="h-3 w-3 fill-brass text-brass" aria-hidden />
+                  Dishd Verified
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -158,7 +193,7 @@ export default async function DiscoveryPage({
           )}
 
           {/* -------------------------------------------------------- kitchens */}
-          <section id="kitchens" className="mt-16 scroll-mt-20">
+          <section id="kitchens" className="mt-12 scroll-mt-20">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="font-display text-3xl text-forest sm:text-4xl">
@@ -213,7 +248,7 @@ export default async function DiscoveryPage({
           </section>
 
           {/* ----------------------------------------------------- how it works */}
-          <section className="mt-20">
+          <section className="mt-16">
             <h2 className="font-display text-3xl text-forest sm:text-4xl">
               Why a rating here means something
             </h2>
@@ -243,7 +278,7 @@ export default async function DiscoveryPage({
           </section>
 
           {/* ------------------------------------------------- credibility note */}
-          <section className="mt-16 grid gap-8 overflow-hidden rounded-3xl border border-line bg-surface lg:grid-cols-2">
+          <section className="mt-14 grid gap-8 overflow-hidden rounded-3xl border border-line bg-surface lg:grid-cols-2">
             <div className="p-8 sm:p-10">
               <p className="text-xs font-medium tracking-[0.14em] text-brass-ink uppercase">
                 The part that outlasts the meal
@@ -282,7 +317,7 @@ export default async function DiscoveryPage({
 
           {/* ------------------------------------------------- recently eaten */}
           {activity.length > 0 && (
-            <section className="mt-20">
+            <section className="mt-16">
               <h2 className="font-display text-3xl text-forest sm:text-4xl">Recently eaten</h2>
               <p className="mt-2 text-sm text-ink-muted">
                 Every entry below is tied to a pickup someone actually completed.
@@ -332,7 +367,7 @@ export default async function DiscoveryPage({
           )}
 
           {/* --------------------------------------------------- two audiences */}
-          <section className="mt-20 grid gap-5 lg:grid-cols-2">
+          <section className="mt-16 grid gap-5 lg:grid-cols-2">
             <div className="lift rounded-3xl border border-line bg-surface p-8">
               <Utensils className="h-6 w-6 text-forest" aria-hidden />
               <h2 className="mt-4 font-display text-2xl text-forest">Come hungry</h2>
@@ -375,7 +410,7 @@ export default async function DiscoveryPage({
           </section>
 
           {/* ------------------------------------------------------ honest note */}
-          <section className="mt-16 rounded-2xl border border-line bg-surface-sunk p-6 sm:p-8">
+          <section className="mt-14 rounded-2xl border border-line bg-surface-sunk p-6 sm:p-8">
             <h2 className="font-display text-xl text-forest">What Dishd does not claim</h2>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink-muted">
               Dishd does not certify any food as halal and is not a certifying

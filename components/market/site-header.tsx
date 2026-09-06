@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CookingPot } from "lucide-react";
 import { currentProfile, signOut } from "@/lib/market/auth-actions";
 import { createServerClient } from "@/lib/supabase/server";
 import { CartButton } from "@/components/market/cart-button";
@@ -26,7 +27,16 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-cream/85 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/" aria-label="Dishd home" className="shrink-0">
+        <Link href="/" aria-label="Dishd home" className="flex shrink-0 items-center gap-2.5">
+          {/* The pot sits in a forest disc so the mark reads as a lockup rather
+              than a loose icon next to a wordmark. aria-hidden because the
+              adjacent logo already carries the name. */}
+          <span
+            aria-hidden
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-forest sm:h-9 sm:w-9"
+          >
+            <CookingPot className="h-[18px] w-[18px] text-cream sm:h-5 sm:w-5" />
+          </span>
           <Image
             src="/logos/GreenLogo-trimmed.png"
             alt="Dishd"
