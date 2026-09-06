@@ -25,9 +25,30 @@ export function getStripe(): Stripe {
   return client;
 }
 
-/** Absolute base for Stripe's return URLs; Stripe will not accept a relative one. */
+/**
+ * Absolute base for Stripe's return URLs; Stripe will not accept a relative one.
+ *
+ * NEXT_PUBLIC_APP_URL wins where it is set, because a deployment that knows its
+ * own address should say so. The Vercel fallbacks exist so that forgetting it
+ * does not silently send a paying buyer to localhost: VERCEL_URL is the address
+ * of the deployment actually serving the request, which is also what makes a
+ * preview deployment return to itself rather than to production.
+ *
+ * Note for whoever changes it: NEXT_PUBLIC_ variables are inlined at build
+ * time, so editing that one in the dashboard does nothing until a redeploy.
+ * The VERCEL_ ones are read at runtime.
+ */
 export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (explicit) return explicit.replace(/\/$/, "");
+
+  const host =
+    process.env.VERCEL_ENV === "production"
+      ? (process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL)
+      : process.env.VERCEL_URL;
+  if (host) return `https://${host.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+
+  return "http://localhost:3000";
 }
 
 export type CheckoutLine = { name: string; unitAmountCents: number; qty: number };

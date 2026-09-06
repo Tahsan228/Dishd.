@@ -88,6 +88,87 @@ is how secrets end up in git history. The variable list above is the source of t
 
 ---
 
+## Deploying to Vercel
+
+The repository is connected to Vercel; `npm run build` passes and every route is
+server-rendered on demand, so nothing extra is needed to make it build. What
+follows is what has to be true for it to *work* once it is up.
+
+### 1. Environment variables
+
+Set these in **Project → Settings → Environment Variables**, for Production and
+Preview both:
+
+| Variable | Needed for | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | everything | bare project URL, no `/rest/v1`, no trailing slash |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | everything | |
+| `SUPABASE_SERVICE_ROLE_KEY` | checkout, receipts, rewards | server-only; never import it into a client component |
+| `STRIPE_SECRET_KEY` | card checkout | without it, card is simply unavailable and cash still works |
+| `STRIPE_WEBHOOK_SECRET` | card checkout in production | see below — this one is not optional once real money moves |
+| `NEXT_PUBLIC_APP_URL` | Stripe return URLs | optional on Vercel; see below |
+| `ANTHROPIC_API_KEY` | nothing today | receipts are reviewed by a human |
+| `NEXT_PUBLIC_DISHD_DEMO_PASSWORD` | the demo panel | **leave unset in production** — it puts one-click sign-in as a verified cook in the client bundle |
+
+`NEXT_PUBLIC_*` variables are inlined into the bundle at build time, so changing
+one in the dashboard does nothing until you redeploy. The others are read at
+runtime.
+
+### 2. The Stripe webhook
+
+Add an endpoint in the Stripe dashboard pointing at
+`https://<your-domain>/api/stripe/webhook`, subscribed to
+`checkout.session.completed` and `checkout.session.async_payment_succeeded`, and
+put its signing secret in `STRIPE_WEBHOOK_SECRET`.
+
+Until you do, that route refuses **every** request with a 503 rather than
+trusting an unsigned body. That is deliberate: an unsigned "payment succeeded"
+would let anyone mark any order paid and collect food. The consequence of
+leaving it unset is that a buyer who closes the tab before being redirected back
+never gets their order marked paid, because the return-path confirmation is what
+normally covers that.
+
+### 3. Return URLs
+
+`appUrl()` prefers `NEXT_PUBLIC_APP_URL`, then falls back to Vercel's own
+`VERCEL_PROJECT_PRODUCTION_URL` (production) or `VERCEL_URL` (preview). So you
+can leave `NEXT_PUBLIC_APP_URL` unset and preview deployments will correctly
+return to themselves instead of to production. Set it once you have a custom
+domain.
+
+### 4. Supabase redirect URLs
+
+In **Supabase → Authentication → URL Configuration**, add the Vercel domain to
+Site URL and Redirect URLs. Confirmation emails point at whatever is configured
+there, not at whatever this app thinks its address is.
+
+### 5. Migrations
+
+Apply `supabase/migrations/*.sql` **in order** through the Supabase SQL editor.
+Vercel deploys code, not schema — nothing in a deployment runs these. `npm run
+check:env` reports whether they have been applied.
+
+### The 4.5 MB request limit
+
+A Vercel function rejects any request body over 4.5 MB *at the edge*, before the
+application sees it, and Server Actions are ordinary requests. An 8 MB phone
+photo would therefore fail with a bare 413 in production while working perfectly
+in local development, where no such limit exists.
+
+`lib/market/image-downscale.ts` re-encodes images in the browser before they are
+posted, which puts an ordinary phone photo far under the limit. HEIC and PDF
+cannot be re-encoded by a canvas, so those are checked against the limit and
+refused with a sentence instead. If you raise the upload caps in
+`lib/market/upload-validation.ts`, this is the constraint to think about first.
+
+### What is still true after deploying
+
+Card money lands in the platform account. Stripe Connect is not built, so a card
+order is money Dishd holds and owes the cook rather than a settled transfer.
+Cash at pickup is the only path that fully settles. See the end of this file.
+
+---
+
 ## File ownership — the collision-avoidance rule
 
 Live Share means you are both editing the *same* files on the *same* machine. There are no branches and no merge conflicts, which sounds good but means two people editing one file will overwrite each other's thinking in real time. The directory split below exists so that never happens.

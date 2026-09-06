@@ -6,6 +6,7 @@ import { CheckCircle2, Clock, TriangleAlert, Wand2, XCircle } from "lucide-react
 import { submitReceipt, type SubmitReceiptResult } from "@/lib/market/receipt-actions";
 import { MEAT_TYPES } from "@/lib/market/cook-onboarding";
 import { cn } from "@/lib/utils";
+import { downscaleImage, requestTooLargeMessage, wouldExceedRequestLimit } from "@/lib/market/image-downscale";
 import { receiptFileError, RECEIPT_ACCEPT } from "@/lib/market/upload-validation";
 
 const field =
@@ -56,6 +57,17 @@ export function ReceiptForm({
     if (problem) { setResult({ ok: false, status: "mismatch", checks: [], message: problem }); return; }
     start(async () => {
       try {
+        // Shrunk here rather than on the server: the host rejects an oversized
+        // request body before any of our code runs, so a full-resolution phone
+        // photo has to become smaller in the browser or never arrive at all.
+        if (file instanceof File) {
+          const smaller = await downscaleImage(file);
+          if (wouldExceedRequestLimit([smaller])) {
+            setResult({ ok: false, status: "mismatch", checks: [], message: requestTooLargeMessage(false) });
+            return;
+          }
+          form.set("receipt", smaller, smaller.name);
+        }
         const r = await submitReceipt(kitchenId, form);
         setResult(r);
         if (r.ok) router.refresh();

@@ -6,6 +6,7 @@ import type { DiaryLog } from "@/lib/social/data";
 import { saveReview } from "@/lib/social/review-actions";
 import { PHOTO_ACCEPT, type ReviewActionState } from "@/lib/social/review-validation";
 import { galleryError } from "@/lib/market/upload-validation";
+import { downscaleAll, requestTooLargeMessage, wouldExceedRequestLimit } from "@/lib/market/image-downscale";
 import { StarRating } from "./star-rating";
 import { cn } from "@/lib/utils";
 import type { ReviewDish } from "@/lib/social/pickup-reviews";
@@ -21,10 +22,19 @@ export function ReviewComposer({ log, kitchen, dishes = [], onSaved }: { log: Di
     event.preventDefault(); const form = new FormData(event.currentTarget);
     const problem = galleryError(files);
     if (problem || keep.length + files.length + (draft.photo ? 1 : 0) > 3) { setState({ ok: false, message: problem ?? "Choose up to three photos total." }); return; }
-    form.delete("photoFiles"); files.forEach(file => form.append("photoFiles", file));
     form.set("keepPhotos", JSON.stringify(keep));
     start(async () => {
       try {
+        // Shrunk in the browser because the host refuses an oversized request
+        // body before any of our code runs: three full-resolution phone photos
+        // would be rejected at the edge with nothing we could say about it.
+        const smaller = await downscaleAll(files);
+        if (wouldExceedRequestLimit(smaller)) {
+          setState({ ok: false, message: requestTooLargeMessage(smaller.length > 1) });
+          return;
+        }
+        form.delete("photoFiles");
+        smaller.forEach(file => form.append("photoFiles", file));
         const result = await saveReview(log.id, state, form); setState(result);
         if (result.ok) { setKeep(result.photos ?? []); setFiles([]); setDraft(current => ({ ...current, photo: "" })); onSaved?.(); router.refresh(); }
       } catch { setState({ ok: false, message: "Your review could not be sent. Your draft is still here; please try again." }); }

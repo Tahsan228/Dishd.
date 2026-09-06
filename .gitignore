@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Source logo masters live in public/logos; this root copy is a working folder.
 /logos/
+
+# supabase cli scratch
+/supabase/.temp/
