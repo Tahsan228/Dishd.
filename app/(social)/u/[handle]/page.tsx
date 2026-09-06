@@ -11,6 +11,10 @@ import { RatingHistogram } from "@/components/social/rating-histogram";
 import { ReviewCard } from "@/components/social/review-card";
 import { SocialNotice } from "@/components/social/social-notice";
 import { TierMark } from "@/components/social/tier-mark";
+import { DiaryEditor } from "@/components/social/diary-editor";
+import { FollowButton } from "@/components/social/follow-button";
+import { accentClasses } from "@/lib/social/profile";
+import { cn } from "@/lib/utils";
 
 export default async function BuyerProfilePage({ params, searchParams }: {
   params: Promise<{ handle: string }>;
@@ -31,6 +35,20 @@ export default async function BuyerProfilePage({ params, searchParams }: {
     supabase.from("logs").select(REVIEW_COLUMNS).eq("buyer_id", profile.id)
       .order("logged_at", { ascending: false }).order("id", { ascending: false }).range(start, start + DIARY_PAGE_SIZE),
   ]);
+  // Who is looking, whether they already follow, and the public counts.
+  const { data: { user: viewer } } = await supabase.auth.getUser();
+  const isOwner = viewer?.id === profile.id;
+  const [followCounts, followRow] = await Promise.all([
+    supabase.from("profile_follow_counts").select("followers, following").eq("user_id", profile.id).maybeSingle(),
+    viewer && !isOwner
+      ? supabase.from("follows").select("follower_id").eq("follower_id", viewer.id).eq("following_id", profile.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const follows = { followers: followCounts.data?.followers ?? 0, following: followCounts.data?.following ?? 0 };
+  const isFollowing = Boolean(followRow.data);
+  const accent = accentClasses(profile.accent ?? "forest");
+  const banner = safeImageUrl(profile.banner_url);
+
   const stats = !counters.error && counters.data ? counters.data as BuyerCounters : null;
   const credibility = stats ? scoreBuyer(stats) : null;
   const badges = stats ? earnedBadges("user", computedUserBadges(stats), (granted.data ?? []).map((badge) => badge.badge_code)) : [];
@@ -44,24 +62,76 @@ export default async function BuyerProfilePage({ params, searchParams }: {
     { label: "Appreciations", value: stats.likes_received },
   ] : [];
 
-  return <main className="mx-auto max-w-5xl space-y-8 px-5 py-8 sm:py-12">
-    <section className="rounded-2xl border border-line bg-surface p-5 sm:p-8">
-      <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-ink-muted">A seat at the neighborhood table</p>
-      <div className="flex flex-wrap items-center gap-4">
-        {avatar ? (
+  return <main className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-5 sm:py-12">
+    <section className="overflow-hidden rounded-2xl border border-line bg-surface">
+      {/* Banner. A plain accent band when there is no image, so the header has
+          the same shape either way and nothing shifts once one is added. */}
+      <div className={cn("relative h-28 w-full sm:h-40", accent.band)}>
+        {banner && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatar} alt="" width={72} height={72} referrerPolicy="no-referrer" className="size-18 rounded-full bg-forest-soft object-cover" />
-        ) : <span aria-hidden="true" className="flex size-18 items-center justify-center rounded-full bg-forest-soft font-display text-3xl text-forest">{profile.display_name.slice(0, 1)}</span>}
-        <div className="min-w-0 flex-1"><h1 className="break-words font-display text-3xl sm:text-4xl">{profile.display_name}</h1><p className="mt-1 break-all text-sm text-ink-muted">@{profile.handle}</p></div>
-        {credibility && <TierMark tier={credibility.tier} />}
+          <img src={banner} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+        )}
       </div>
-      {profile.bio && <p className="mt-5 max-w-2xl whitespace-pre-wrap break-words text-sm leading-relaxed">{profile.bio}</p>}
-      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-muted">
-        {profile.city && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" aria-hidden="true" />{profile.city}</span>}
-        <span>At the table since {formatDate(profile.created_at)}</span>
-        {credibility && <span className="tabular font-medium text-forest">{formatNumber(credibility.score)} community points</span>}
+
+      <div className="p-5 sm:p-8">
+        {/* Pulled up over the banner. items-end keeps the name on the baseline
+            of the avatar instead of floating beside its middle. */}
+        <div className="-mt-16 flex flex-wrap items-end gap-4 sm:-mt-20">
+          {avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatar} alt="" width={96} height={96} referrerPolicy="no-referrer" className="size-20 shrink-0 rounded-full border-4 border-surface bg-forest-soft object-cover sm:size-24" />
+          ) : <span aria-hidden="true" className="flex size-20 shrink-0 items-center justify-center rounded-full border-4 border-surface bg-forest-soft font-display text-3xl text-forest sm:size-24">{profile.display_name.slice(0, 1)}</span>}
+
+          {/* min-w-0 lets a long name wrap instead of pushing the tier mark
+              out of the card, which is what was breaking the layout. */}
+          <div className="min-w-0 flex-1 basis-64">
+            <h1 className="font-display text-3xl break-words sm:text-4xl">{profile.display_name}</h1>
+            <p className="mt-1 text-sm break-all text-ink-muted">@{profile.handle}</p>
+          </div>
+          {credibility && <div className="shrink-0"><TierMark tier={credibility.tier} /></div>}
+        </div>
+
+        {profile.tagline && (
+          <p className={cn("mt-4 inline-block max-w-full rounded-full px-3 py-1.5 text-xs font-medium break-words", accent.chip)}>
+            {profile.tagline}
+          </p>
+        )}
+
+        {profile.bio && <p className="mt-4 max-w-2xl text-sm leading-relaxed break-words whitespace-pre-wrap">{profile.bio}</p>}
+
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-muted">
+          {profile.city && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5 shrink-0" aria-hidden="true" />{profile.city}</span>}
+          <span>At the table since {formatDate(profile.created_at)}</span>
+          {credibility && <span className="tabular font-medium text-forest">{formatNumber(credibility.score)} community points</span>}
+          <span className="tabular">
+            <span className="font-medium text-ink">{follows.following}</span> following
+          </span>
+        </div>
+
+        <div className="mt-5">
+          {isOwner ? (
+            <DiaryEditor
+              displayName={profile.display_name}
+              tagline={profile.tagline ?? ""}
+              bio={profile.bio ?? ""}
+              city={profile.city ?? ""}
+              accent={profile.accent ?? "forest"}
+              avatarUrl={profile.avatar_url ?? ""}
+              bannerUrl={profile.banner_url ?? ""}
+            />
+          ) : (
+            <FollowButton
+              targetId={profile.id}
+              targetHandle={profile.handle}
+              initialFollowing={isFollowing}
+              initialFollowers={follows.followers}
+              signedIn={Boolean(viewer)}
+            />
+          )}
+        </div>
+
+        {stats ? <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-4">{figures.map((figure) => <div key={figure.label} className="min-w-0"><dd className="tabular font-display text-3xl text-forest">{formatNumber(figure.value)}</dd><dt className="mt-1 text-xs break-words text-ink-muted">{figure.label}</dt></div>)}</dl> : <p className="mt-5 text-sm text-ink-muted">Community stats are temporarily unavailable.</p>}
       </div>
-      {stats ? <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-4">{figures.map((figure) => <div key={figure.label}><dd className="tabular font-display text-3xl text-forest">{formatNumber(figure.value)}</dd><dt className="mt-1 text-xs text-ink-muted">{figure.label}</dt></div>)}</dl> : <p className="mt-5 text-sm text-ink-muted">Community stats are temporarily unavailable.</p>}
     </section>
     <div className="grid items-start gap-8 md:grid-cols-[minmax(0,1fr)_18rem]">
       <section aria-label="Meal diary" className="min-w-0 space-y-4">

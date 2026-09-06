@@ -137,6 +137,11 @@ export type ProfilePublic = {
   bio: string | null;
   city: string | null;
   created_at: string;
+  /** Diary customisation (migration 0014). Null on rows written before it. */
+  banner_url: string | null;
+  tagline: string | null;
+  /** One of the palette accents; see lib/social/profile.ts. */
+  accent: string | null;
 };
 
 export type SourcingBatch = {

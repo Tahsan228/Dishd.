@@ -4,6 +4,7 @@ import { useActionState, useRef } from "react";
 import { TriangleAlert, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { signIn } from "@/lib/market/auth-actions";
+import { SecondSessionHint } from "@/components/market/second-session-hint";
 
 /**
  * Seeded demo accounts. Clicking one signs straight in rather than just
@@ -131,9 +132,12 @@ export function SignInForm({ next }: { next: string }) {
       </p>
 
       {DEMO_PASSWORD && (
-        <p className="mt-2 text-center text-[11px] text-ink-muted">
-          The accounts listed above are seeded demo accounts, not real people.
-        </p>
+        <>
+          <p className="mt-2 text-center text-[11px] text-ink-muted">
+            The accounts listed above are seeded demo accounts, not real people.
+          </p>
+          <SecondSessionHint />
+        </>
       )}
     </form>
   );

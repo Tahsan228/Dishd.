@@ -2,7 +2,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import type { KitchenCounters, Log, ProfilePublic } from "@/lib/types";
 
 export const KITCHEN_COUNTER_COLUMNS = "orders_completed,avg_rating_10,distinct_customers,repeat_customers,trust_streak,permit_status,upheld_flags,open_incidents,cook_cancellations,created_at";
-export const PROFILE_COLUMNS = "id,handle,display_name,avatar_url,bio,city,created_at";
+export const PROFILE_COLUMNS = "id,handle,display_name,avatar_url,banner_url,tagline,accent,bio,city,created_at";
 export const LOG_COLUMNS = "id,buyer_id,kitchen_id,order_id,rating_10,body,photo_url,photo_urls,flavor_rating_10,value_rating_10,quality_rating_10,is_verified,sourcing_affirmed,logged_at";
 export const REVIEW_COLUMNS = `${LOG_COLUMNS},author:profiles!logs_buyer_id_fkey(${PROFILE_COLUMNS}),kitchen:kitchens!logs_kitchen_id_fkey(name,slug)`;
 
