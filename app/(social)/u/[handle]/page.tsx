@@ -65,15 +65,20 @@ export default async function BuyerProfilePage({ params, searchParams }: {
   return <main className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-5 sm:py-12">
     <section className="overflow-hidden rounded-2xl border border-line bg-surface">
       {/* Banner. A plain accent band when there is no image, so the header has
-          the same shape either way and nothing shifts once one is added. */}
-      <div className={cn("relative h-28 w-full sm:h-40", accent.band)}>
+          the same shape either way and nothing shifts once one is added.
+
+          Deliberately NOT positioned: a positioned element paints above a
+          static sibling whatever the DOM order, so `relative` here put the
+          banner on top of the avatar and name that are pulled up over it. */}
+      <div className={cn("h-28 w-full sm:h-40", accent.band)}>
         {banner && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={banner} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
         )}
       </div>
 
-      <div className="p-5 sm:p-8">
+      {/* Positioned instead, so the overlap resolves in this direction. */}
+      <div className="relative z-10 p-5 sm:p-8">
         {/* Pulled up over the banner. items-end keeps the name on the baseline
             of the avatar instead of floating beside its middle. */}
         <div className="-mt-16 flex flex-wrap items-end gap-4 sm:-mt-20">
@@ -137,7 +142,7 @@ export default async function BuyerProfilePage({ params, searchParams }: {
       <section aria-label="Meal diary" className="min-w-0 space-y-4">
         <div><p className="text-xs font-semibold uppercase tracking-widest text-brass-ink">The meal diary</p><h2 className="mt-1 font-display text-3xl">Places, plates & memories.</h2><p className="mt-2 text-sm text-ink-muted">Newest meals first. Every verified mark starts with a pickup.</p></div>
         {diary.error ? <SocialNotice title="Diary unavailable">Please try again shortly.</SocialNotice> : <>
-          {entries.length ? entries.map((entry) => <ReviewCard key={entry.id} review={entry} showKitchen />) : <SocialNotice title={page === 1 ? "The first bite is still ahead." : "No entries on this page"}>{page === 1 ? "Completed pickups will find a home in this diary." : "Head back to the newer entries."}</SocialNotice>}
+          {entries.length ? entries.map((entry) => <ReviewCard key={entry.id} review={entry} showKitchen editable={isOwner} />) : <SocialNotice title={page === 1 ? "The first bite is still ahead." : "No entries on this page"}>{page === 1 ? "Completed pickups will find a home in this diary." : "Head back to the newer entries."}</SocialNotice>}
           <DiaryPagination page={page} hasMore={rows.length > DIARY_PAGE_SIZE} path={`/u/${encodeURIComponent(profile.handle)}`} />
         </>}
       </section>

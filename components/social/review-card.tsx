@@ -1,11 +1,20 @@
 import Link from "next/link";
-import { BadgeCheck, CircleHelp } from "lucide-react";
+import { BadgeCheck, CircleHelp, Pencil } from "lucide-react";
 import { formatDate, safeImageUrl, type ReviewEntry } from "@/lib/social/data";
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/social/star-rating";
 import { ReviewText } from "@/components/social/review-text";
 
-export function ReviewCard({ review, showKitchen = false }: { review: ReviewEntry; showKitchen?: boolean }) {
+export function ReviewCard({
+  review,
+  showKitchen = false,
+  editable = false,
+}: {
+  review: ReviewEntry;
+  showKitchen?: boolean;
+  /** Shows an explicit edit link. Only pass this for the viewer's own entries. */
+  editable?: boolean;
+}) {
   const photos = [...new Set([...(review.photo_urls ?? []), ...(review.photo_url ? [review.photo_url] : [])])].map(safeImageUrl).filter((url): url is string => !!url).slice(0, 3);
   return (
     <article className={cn("min-w-0 rounded-2xl border p-4 sm:p-5", review.is_verified ? "border-line bg-surface" : "border-dashed border-line bg-surface-sunk")}>
@@ -28,6 +37,17 @@ export function ReviewCard({ review, showKitchen = false }: { review: ReviewEntr
         </a>)}
       </div>}
       <div className="mt-4 flex flex-wrap gap-3 text-xs text-ink-muted">{[["Food", review.flavor_rating_10], ["Value", review.value_rating_10], ["Packaging", review.quality_rating_10]].map(([label, value]) => value != null && <span key={label} className="rounded-full bg-cream px-3 py-2">{label} <strong className="ml-1 text-forest">{Number(value) / 2}/5</strong></span>)}</div>
+      {editable && (
+        <p className="mt-4 border-t border-line pt-3">
+          <Link
+            href={`/log/${review.id}`}
+            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-forest underline-offset-4 hover:underline"
+          >
+            <Pencil className="size-3.5 shrink-0" aria-hidden="true" />
+            {review.rating_10 === null ? "Write this review" : "Edit your review"}
+          </Link>
+        </p>
+      )}
       {review.sourcing_affirmed !== null && <p className={cn("mt-4 border-t border-line pt-3 text-xs leading-relaxed", review.sourcing_affirmed ? "text-forest" : "text-clay")}>
         {review.sourcing_affirmed ? "Buyer says the packaging and quality matched the cook’s sourcing claim." : "Buyer says the packaging or quality did not match the cook’s sourcing claim."}
       </p>}

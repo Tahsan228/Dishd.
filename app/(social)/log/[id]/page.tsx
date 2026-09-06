@@ -29,6 +29,10 @@ export default async function LogPage({ params }: { params: Promise<{ id: string
     {!likes.error && !liked?.error ? <ReviewAppreciation logId={id} initialCount={likes.count ?? 0} initialLiked={!!liked?.data} signedIn={!!user} /> : <p className="text-sm text-ink-muted">Appreciations are temporarily unavailable.</p>}
     {ownReview && log.is_verified && log.order_id && <ReviewComposer log={log} kitchen={log.kitchen} />}
     {ownReview && !log.is_verified && <SocialNotice title="A note about this entry">This entry has no verified pickup. Completed orders create a verified entry automatically.</SocialNotice>}
+    {/* Verified but with no order behind it: a seeded or imported entry. The
+        composer writes through the order, so there is nothing to edit — say so
+        rather than showing the owner a page with no controls and no reason. */}
+    {ownReview && log.is_verified && !log.order_id && <SocialNotice title="This entry cannot be edited">It is not linked to one of your orders, so there is no pickup for a review to attach to. Entries created by completing a pickup are editable here.</SocialNotice>}
     {log.author && <Link href={`/u/${encodeURIComponent(log.author.handle)}`} className="inline-flex min-h-11 items-center text-sm font-medium text-forest underline underline-offset-4">More from {log.author.display_name}’s diary</Link>}
   </main>;
 }
