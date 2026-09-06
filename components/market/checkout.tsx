@@ -198,7 +198,7 @@ export function Checkout({
           </div>
           <fieldset className="mt-6">
             <legend className="text-sm font-medium text-ink">A little thanks for your cook</legend>
-            <p id="tip-help" className="mt-1 text-sm text-ink-muted">Optional. Tips go to the kitchen and are excluded from Dishd's cash commission. Pay your tip with your meal.</p>
+            <p id="tip-help" className="mt-1 text-sm text-ink-muted">Optional. Tips go to the kitchen and are excluded from Dishd&apos;s cash commission. Pay your tip with your meal.</p>
             <div className="mt-3 grid grid-cols-4 gap-2">
               {['0', '2', '3', '5'].map(value => <button key={value} type="button" aria-pressed={tip === value} onClick={() => setTip(value)} className={cn('min-h-11 rounded-xl border text-sm', tip === value ? 'border-forest bg-forest-soft text-forest' : 'border-line text-ink')}>{value === '0' ? 'No tip' : '$' + value}</button>)}
             </div>

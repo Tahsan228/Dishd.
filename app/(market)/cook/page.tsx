@@ -75,7 +75,7 @@ export default async function CookDashboard() {
     supabase
       .from("orders")
       .select(
-        `id, status, payment_method, subtotal_cents, tip_cents, cash_fee_cents, pickup_code, created_at,
+        `*,
          profiles ( display_name, handle ),
          order_items ( qty, name_snapshot )`,
       )
@@ -211,7 +211,7 @@ export default async function CookDashboard() {
                     </div>
                     <div className="text-right">
                       <p className="tabular text-sm font-medium text-forest">
-                        {formatCents(o.subtotal_cents + o.tip_cents)}
+                        {formatCents(o.subtotal_cents + (o.tip_cents ?? 0))}
                       </p>
                       <p className="text-xs text-ink-muted">
                         {o.payment_method === "cash" ? "Cash at pickup" : "Card"}
@@ -229,7 +229,7 @@ export default async function CookDashboard() {
                     </p>
                   )}
 
-                  <p className="mt-3 text-sm text-ink-muted">Tip: {formatCents(o.tip_cents)}{o.payment_method === "cash" && <> &middot; Dishd fee on collection: {formatCents(o.cash_fee_cents)}</>}</p>
+                  <p className="mt-3 text-sm text-ink-muted">Tip: {formatCents(o.tip_cents ?? 0)}{o.payment_method === "cash" && <> &middot; Dishd fee on collection: {formatCents(o.cash_fee_cents ?? 0)}</>}</p>
                   <OrderActions orderId={o.id} status={o.status} />
                 </li>
               );

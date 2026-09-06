@@ -48,7 +48,9 @@ export async function placeOrder(_prev: PlaceOrderState, form: FormData): Promis
       p_reward:String(form.get('rewardId')??'')||null,p_ack_version:ACK_VERSION,
       p_acks:ACKNOWLEDGMENTS.map(a=>a.key),p_ip:h.get('x-forwarded-for')?.split(',')[0]?.trim()??null,p_agent:h.get('user-agent')
     });
-    if(error || !data?.[0]) return {error:error?.message??'Could not place the order. Please try again.'};
+    if(error || !data?.[0]) return {error:error && ['PGRST202','42883','42703'].includes(error.code)
+      ? 'Ordering is temporarily unavailable while payments are being updated. Your cart is still here.'
+      : error?.message??'Could not place the order. Please try again.'};
     const order=data[0] as {order_id:string;subtotal_cents:number;discount_cents:number;kitchen_name:string;tip_cents:number};
     destination='/order/'+order.order_id;
     if(method==='card') {

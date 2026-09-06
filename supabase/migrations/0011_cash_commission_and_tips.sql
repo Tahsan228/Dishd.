@@ -53,7 +53,7 @@ begin
   end if;
   select * into placed from dishd_place_order_before_tips(p_buyer,p_kitchen,p_lines,p_method,p_reward,p_ack_version,p_acks,p_ip,p_agent);
   if p_method='card' and placed.subtotal_cents+p_tip_cents<50 then raise exception 'Card orders need a total of at least $0.50.'; end if;
-  update orders set tip_cents=p_tip_cents,cash_fee_cents=case when p_method='cash' then (placed.subtotal_cents+10)/20 else 0 end where id=placed.order_id;
+  update orders set tip_cents=p_tip_cents,cash_fee_cents=case when p_method='cash' then (placed.subtotal_cents::bigint+10)/20 else 0 end where id=placed.order_id;
   return query select placed.order_id,placed.subtotal_cents,placed.discount_cents,placed.kitchen_name,p_tip_cents;
 end;
 $$;

@@ -20,7 +20,7 @@ export function DemoAd({ variant = 0 }: { variant?: number }) {
     </div>
     <div className="mt-4 flex items-start gap-4">
       <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-forest-soft text-forest"><Icon aria-hidden className="h-6 w-6" /></span>
-      <div className="min-w-0"><h2 className="text-lg font-medium text-forest">{ad.title}</h2>
+      <div className="min-w-0"><h2 className="font-sans text-lg font-medium text-forest">{ad.title}</h2>
         <p className="mt-2 text-sm text-ink-muted">{ad.body}</p>
         <Link href={"/demo/ads#" + ad.slug} className="mt-3 inline-block py-2 text-sm font-medium text-forest underline underline-offset-4">View sample promotion</Link>
       </div>

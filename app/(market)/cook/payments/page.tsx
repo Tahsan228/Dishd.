@@ -38,7 +38,10 @@ export default async function KitchenPayments({ searchParams }: { searchParams: 
   const balance = fees.reduce((sum, fee) => sum + fee.amount_cents, 0);
   const pendingBill = bills.find(bill => bill.status === "pending");
   const payable = pendingBill?.amount_cents ?? balance;
-  const overdue = balance >= 50 && fees.some(fee => Date.parse(fee.due_at) <= Date.now());
+  // Authenticated server page: due dates are evaluated once for this request.
+  // eslint-disable-next-line react-hooks/purity -- This runs on the server after request-scoped reads.
+  const now = Date.now();
+  const overdue = balance >= 50 && fees.some(fee => Date.parse(fee.due_at) <= now);
   return <><SiteHeader /><main className="mx-auto w-full max-w-3xl px-4 pb-20 pt-8 sm:px-6">
     <Link href="/cook" className="text-sm text-forest underline underline-offset-4">Back to your kitchen</Link>
     <h1 className="mt-5 font-display text-3xl text-forest">Your kitchen payments</h1>
