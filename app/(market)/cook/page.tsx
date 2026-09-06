@@ -55,8 +55,7 @@ export default async function CookDashboard() {
     .select(
       `id, name, slug, status, orders_completed, trust_streak, permit_status,
        avg_rating_10, distinct_customers, repeat_customers, upheld_flags,
-       open_incidents, cook_cancellations, created_at, revenue_cents,
-       default_prep_minutes, priority_fee_cents, accepts_scheduled`,
+       open_incidents, cook_cancellations, created_at, revenue_cents`,
     )
     .eq("owner_id", user.id)
     .maybeSingle();
@@ -84,7 +83,7 @@ export default async function CookDashboard() {
     );
   }
 
-  const [ordersResult, batchesResult, menuResult] = await Promise.all([
+  const [ordersResult, batchesResult, menuResult, termsResult] = await Promise.all([
     supabase
       .from("orders")
       .select(
@@ -106,6 +105,13 @@ export default async function CookDashboard() {
       .select("id, name, price_cents, is_available, contains_meat")
       .eq("kitchen_id", kitchen.id)
       .order("created_at", { ascending: true }),
+    // Asked for separately so that a database still on 0014 loses this panel
+    // rather than the dashboard.
+    supabase
+      .from("kitchens")
+      .select("default_prep_minutes, priority_fee_cents, accepts_scheduled")
+      .eq("id", kitchen.id)
+      .maybeSingle(),
   ]);
 
   const live = ordersResult.data ?? [];
@@ -114,7 +120,8 @@ export default async function CookDashboard() {
   // order in a 10am queue is indistinguishable from something to cook now,
   // which is the whole reason scheduling needed its own place on this page.
   const now = new Date();
-  const defaultPrepMinutes = Number(kitchen.default_prep_minutes ?? 25);
+  const orderTerms = termsResult.error ? null : termsResult.data;
+  const defaultPrepMinutes = Number(orderTerms?.default_prep_minutes ?? 25);
   const cookingNow = live
     .filter((o) => isDueNow(o, now, defaultPrepMinutes))
     .sort(compareQueue);
@@ -216,7 +223,10 @@ export default async function CookDashboard() {
           )}
         </p>
 
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        {/* OrderActions owns its own row: it carries the cooking-time field and
+            its explanation, and sharing a wrapping flex row with the link put
+            that at risk of overflowing 390px. */}
+        <div className="mt-3">
           <OrderActions
             orderId={o.id}
             status={o.status}
@@ -228,7 +238,7 @@ export default async function CookDashboard() {
               RLS lets both parties see it. */}
           <Link
             href={`/order/${o.id}`}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-muted hover:border-forest hover:text-forest"
+            className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 text-xs text-ink-muted hover:border-forest hover:text-forest"
           >
             <MessageSquare className="h-3.5 w-3.5" aria-hidden />
             Message buyer
@@ -307,11 +317,13 @@ export default async function CookDashboard() {
           <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
         </Link>
 
-        <OrderSettings
-          defaultPrepMinutes={defaultPrepMinutes}
-          priorityFeeCents={Number(kitchen.priority_fee_cents ?? 0)}
-          acceptsScheduled={kitchen.accepts_scheduled !== false}
-        />
+        {orderTerms && (
+          <OrderSettings
+            defaultPrepMinutes={defaultPrepMinutes}
+            priorityFeeCents={Number(orderTerms.priority_fee_cents ?? 0)}
+            acceptsScheduled={orderTerms.accepts_scheduled !== false}
+          />
+        )}
 
         {/* ------------------------------------------------------ orders --- */}
         <h2 className="mt-8 font-display text-xl text-forest">

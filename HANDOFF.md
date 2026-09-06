@@ -88,3 +88,101 @@ User explicitly requested concurrent, separate payment work while Claude updated
 - Live read-only check: .env.local contains Supabase URL/anon/service-role keys, app URL, Stripe test key, and demo password. It has NO database connection string, management token, or STRIPE_WEBHOOK_SECRET. cash_commissions returns 404 and orders.tip_cents is missing. The user suggested .env.local; its variable names were checked without revealing values, and no alternate schema-management credential exists there.
 - Activation still required: apply supabase/migrations/0011_cash_commission_and_tips.sql after 0010 in the Supabase SQL editor (or provide a local file path containing schema-management credentials), then configure the Stripe signing secret for /api/stripe/webhook. The migration is fully tested locally but has NOT been applied to the live project. Never claim live money collection verified. Existing order/dashboard reads tolerate the column rollout; checkout returns a readable temporary-unavailability message until the new RPC is present.
 - Cash fee checkout uses the existing NEXT_PUBLIC_APP_URL for redirects; match it to the intended preview/deployment. Card payouts to cooks still require Stripe Connect; this work does not claim those transfers are implemented.
+
+## Order timing checkpoint (Claude, 2026-09-06)
+
+The user asked for four things on the order tracking page — notifications when
+the kitchen updates status or messages, a kitchen-set cooking estimate, a paid
+priority option, and scheduled orders — plus a fix for the profile name being
+unreadable against a banner image. All five are done. The user confirmed
+0001-0014 are already applied to the live project.
+
+**Another agent was writing to this same checkout while this work ran**
+(`discovery-feed.tsx`, `nearby-map.tsx`, `pickup-review-panel.tsx` and friends
+appeared mid-session). Their files were left alone; the TypeScript errors in
+them are theirs and are not from this work. Every commit here staged only its
+own paths.
+
+### What was built
+
+- **Migration 0015.** Kitchen offer terms (`default_prep_minutes`,
+  `priority_fee_cents`, `accepts_scheduled`) and order terms
+  (`priority_fee_cents`, `scheduled_for`, `prep_minutes`, `ready_estimate_at`).
+  No new order status: a scheduled order genuinely is `pending` until the cook
+  accepts, so the dashboard splits on `scheduled_for` rather than re-opening the
+  0005 lifecycle trigger.
+- **`dishd_place_order` wrapped again**, the way 0011 wrapped it. Priority sends
+  intent only; the fee is read from the kitchen row, so a crafted form cannot
+  name its own price. A kitchen that does not sell priority raises rather than
+  charging nothing. Scheduling is revalidated in SQL: 15-minute steps, at least
+  30 minutes out, at most 7 days.
+- **The priority fee is the kitchen's sale**, so it joins discounted food in the
+  5% cash commission base and in `revenue_cents`. Tips stay outside both.
+- **Notifications** fire on status change, a message from the kitchen, and a
+  revised estimate. The component is now the order page's only poller, because
+  the old timer ran only while the tab was visible — a backgrounded tab learned
+  nothing and had nothing to announce.
+- **Profile name** moved off the banner. The avatar and tier mark still overlap
+  it; both carry their own opaque ground.
+
+### The honest limit on notifications
+
+They arrive **while Dishd is open in the browser**, including in a background
+tab. That is what the UI says. Delivery with the app closed needs a service
+worker, a push subscription and VAPID keys this deployment does not have. Do not
+let this copy drift into promising more than that without adding the
+infrastructure first.
+
+### A hole closed on the way
+
+`kitchens_update` was `using (owner_id = auth.uid())` with no WITH CHECK and no
+guard, and every credibility counter lives on that row. A cook could PATCH their
+own `avg_rating_10`, `orders_completed` and `revenue_cents` through the public
+REST API and buy the top tier without cooking anything — the same class of hole
+0004 closed on `logs` and 0005 on `orders`, left open on the table that stores
+the score. 0015 adds `trg_kitchens_00_guard`.
+
+The discriminator is **trigger depth, not `auth.uid()`**: `dishd_recompute_kitchen()`
+runs from the orders trigger under the buyer's or cook's own JWT, so freezing on
+a user JWT alone would have broken every counter. A direct PATCH reaches the
+guard at depth 1, a nested recompute at depth 2. There is a database check
+asserting completion still updates the counters, which is the one to keep if
+this guard is ever edited.
+
+### Verification
+
+- 366 unit tests pass (73 new in `lib/market/order-timing.test.ts`).
+- 67 isolated PostgreSQL checks pass, up from 46. The 21 new ones are in
+  `scripts/test-timing-database.mjs`: scheduling bounds and steps, priority
+  pricing and the fee base, what a buyer may not rewrite after checkout, what a
+  cook may, and the kitchens guard.
+- TypeScript and ESLint pass on every file touched here.
+- `/`, `/cart` and `/cook` serve 200 from the shared preview on port 4173.
+- **Live behaviour of the new features is NOT verified**, because 0015 is not
+  applied. Do not claim it is.
+
+### Activation
+
+Apply `supabase/migrations/0015_order_timing_priority_and_alerts.sql` after 0014
+in the Supabase SQL editor. Until then the app degrades on purpose rather than
+breaking:
+
+- `loadKitchenTerms` returns null when the columns are absent, so neither
+  priority nor scheduling is offered.
+- The cook dashboard asks for the new columns in a separate query, so a missing
+  column loses the settings panel rather than the whole dashboard — naming them
+  in the main select would have shown an established cook the "start selling"
+  screen.
+- An ordinary checkout falls back to the 0014 signature of `dishd_place_order`.
+  An order that actually asked for priority or a slot is refused with a message
+  saying the feature is not switched on, rather than placed silently without the
+  thing the buyer chose.
+
+### Still open
+
+- The signed-in `SiteHeader` overflowing 390px, recorded by Codex earlier, is
+  still not addressed.
+- Nothing reminds a buyer that a booking is coming up; the countdown only exists
+  on the order page while it is open.
+- A cook can revise the estimate but there is no record of having done so, so a
+  kitchen that habitually slips cannot be told apart from one that does not.
