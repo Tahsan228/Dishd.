@@ -14,7 +14,7 @@ try {
       canvas.width = 480; canvas.height = 600;
       document.body.append(canvas);
       const c = canvas.getContext("2d");
-      const cream = "#FAF7F0", forest = "#1E4035", brass = "#B49354", clay = "#B7684F";
+      const cream = "#FEF8F6", forest = "#00372C", brass = "#B8873B", clay = "#B4432F";
       function oval(x,y,rx,ry,color) { c.fillStyle=color; c.beginPath(); c.ellipse(x,y,rx,ry,0,0,Math.PI*2); c.fill(); }
       function round(x,y,w,h,r,color) { c.fillStyle=color; c.beginPath(); c.roundRect(x,y,w,h,r); c.fill(); }
       function draw(t) {
@@ -29,7 +29,7 @@ try {
         if(kind==="supper") {c.fillText("is on the stove.",30,174);}
         const lift=Math.sin(t*Math.PI*2)*3;
         c.save();c.translate(0,lift);
-        oval(240,456,183,25,"#E9E4D9");
+        oval(240,456,183,25,"#E8DCD6");
         if(kind==="supper") {
           round(61,341,50,30,12,forest);round(369,341,50,30,12,forest);
           round(90,306,300,143,47,forest);oval(240,311,150,48,brass);oval(240,306,136,40,cream);

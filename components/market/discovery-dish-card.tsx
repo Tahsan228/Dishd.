@@ -7,7 +7,8 @@ import { formatCents } from "@/lib/utils";
 export function DiscoveryDishCard({ dish, kitchen, miles, offer = false }: { dish: DiscoveryDish; kitchen: DiscoveryKitchen; miles: number | null; offer?: boolean }) {
   return <Link href={`/k/${kitchen.slug}#dish-${dish.id}`} className="lift group block h-full overflow-hidden rounded-2xl border border-line bg-surface hover:border-forest/30">
     <div className="relative aspect-[16/10] overflow-hidden bg-surface-sunk">
-      {dish.photo_url || kitchen.hero_url ? <>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={dish.photo_url ?? kitchen.hero_url!} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /></> : <Utensils className="m-auto h-full w-12 text-forest/30" aria-hidden />}
+      {dish.photo_url || kitchen.hero_url ? <>{/* eslint-disable-next-line @next/next/no-img-element */}
+<img src={dish.photo_url ?? kitchen.hero_url!} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /></> : <Utensils className="m-auto h-full w-12 text-forest/30" aria-hidden />}
       <span className="absolute bottom-3 left-3 rounded-full bg-cream px-3 py-1 text-sm font-semibold text-forest">{formatCents(dish.price_cents)}</span>
     </div>
     <div className="p-4">
