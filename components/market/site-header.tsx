@@ -28,7 +28,7 @@ export async function SiteHeader() {
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/" aria-label="Dishd home" className="shrink-0">
           <Image
-            src="/logos/PaleBackgroundGreenText-trimmed.png"
+            src="/logos/GreenLogo-trimmed.png"
             alt="Dishd"
             width={911}
             height={216}
