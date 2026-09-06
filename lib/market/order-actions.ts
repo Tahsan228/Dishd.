@@ -10,6 +10,8 @@ import { transitionError, type OrderActor } from "@/lib/market/order-lifecycle";
 import { paymentMethodError } from "@/lib/market/payments";
 import { createCheckoutSession, stripeConfigured } from "@/lib/market/stripe";
 
+import { parseTipCents } from "@/lib/market/money";
+
 export type PlaceOrderState = { error?: string } | null;
 
 /** Prices, availability, consent and reward reservation commit in one transaction. */
@@ -30,6 +32,8 @@ export async function placeOrder(_prev: PlaceOrderState, form: FormData): Promis
   if(!wanted.length) return {error:'Choose at least one dish.'};
   const kitchenId=String(form.get('kitchenId')??'');
   const method=String(form.get('paymentMethod')??'');
+  const tipCents=parseTipCents(form.get('tip')??'0');
+  if(tipCents===null) return {error:'Enter a tip between $0 and $100, with up to two decimal places.'};
   if(method!=='cash' && method!=='card') return {error:'Choose a payment method.'};
   const {data:kitchen}=await supabase.from('kitchens').select('accepts_cash,accepts_card,stripe_onboarded').eq('id',kitchenId).maybeSingle();
   if(!kitchen) return {error:'That kitchen is unavailable.'};
@@ -40,17 +44,18 @@ export async function placeOrder(_prev: PlaceOrderState, form: FormData): Promis
     const admin=createServiceClient();
     const h=await headers();
     const {data,error}=await admin.rpc('dishd_place_order',{
-      p_buyer:user.id,p_kitchen:kitchenId,p_lines:wanted,p_method:method,
+      p_buyer:user.id,p_kitchen:kitchenId,p_lines:wanted,p_method:method,p_tip_cents:tipCents,
       p_reward:String(form.get('rewardId')??'')||null,p_ack_version:ACK_VERSION,
       p_acks:ACKNOWLEDGMENTS.map(a=>a.key),p_ip:h.get('x-forwarded-for')?.split(',')[0]?.trim()??null,p_agent:h.get('user-agent')
     });
     if(error || !data?.[0]) return {error:error?.message??'Could not place the order. Please try again.'};
-    const order=data[0] as {order_id:string;subtotal_cents:number;discount_cents:number;kitchen_name:string};
+    const order=data[0] as {order_id:string;subtotal_cents:number;discount_cents:number;kitchen_name:string;tip_cents:number};
     destination='/order/'+order.order_id;
     if(method==='card') {
       try {
         const session=await createCheckoutSession({orderId:order.order_id,kitchenName:order.kitchen_name,buyerEmail:user.email??null,
-          lines:[{name:'Pickup from '+order.kitchen_name+(order.discount_cents?' (reward applied)':''),unitAmountCents:order.subtotal_cents,qty:1}]});
+          lines:[{name:'Pickup from '+order.kitchen_name+(order.discount_cents?' (reward applied)':''),unitAmountCents:order.subtotal_cents,qty:1},
+            ...(order.tip_cents?[{name:'Tip for the kitchen',unitAmountCents:order.tip_cents,qty:1}]:[])]});
         const saved=await admin.from('orders').update({stripe_session_id:session.id}).eq('id',order.order_id);
         if(saved.error || !session.url) throw new Error('Checkout could not be saved.');
         destination=session.url;
@@ -115,6 +120,7 @@ export async function advanceOrder(orderId: string, to: OrderStatus) {
   if (!updated) return { error: "That order just changed. Refresh and try again." };
 
   revalidatePath("/cook");
+  revalidatePath("/cook/payments");
   revalidatePath(`/order/${orderId}`);
   return { ok: true };
 }

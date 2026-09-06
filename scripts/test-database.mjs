@@ -105,5 +105,7 @@ try {
   await db.query("select dishd_review_reward_claim($1,true,$2,'reviewed original video')",[claim,cook]);
   await check('Approved app video earns 200 points once',async()=>assert.equal(Number(await scalar("select points from reward_events where user_id=$1 and source_key='mission:app_video:app'",[buyer])),200));
   await check('A promotion cannot be approved twice',()=>denied("select dishd_review_reward_claim($1,true,$2,'duplicate')",[claim,cook]));
+  const { testMoney } = await import("./test-money-database.mjs");
+  await testMoney({ db, check, scalar, denied, actor, cook, buyer, stranger, kitchen });
   console.log("Database checks passed: " + checks);
 } catch(error) { console.error("DATABASE FAILURE:",error.message,error.where??""); process.exitCode=1; } finally { await db.close(); }

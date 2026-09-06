@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { getStripe, stripeConfigured } from "@/lib/market/stripe";
 import { markOrderPaid } from "@/lib/market/payment-settlement";
+import { settleCashSession } from "@/lib/market/cash-billing";
 
 /**
  * Stripe webhook — the authoritative record that an order was paid.
@@ -49,13 +50,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Signature verification failed: ${detail}` }, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
+  if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const orderId = session.metadata?.orderId ?? session.client_reference_id;
-
-    // `complete` can still be unpaid for delayed methods; only settle on paid.
-    if (orderId && session.payment_status === "paid") {
-      await markOrderPaid(orderId, session.id);
+    if (session.payment_status === "paid") {
+      try {
+        const settled = session.metadata?.kind === "cash_commission"
+          ? await settleCashSession(session)
+          : await markOrderPaid(session);
+        if (!settled) return NextResponse.json({ error: "Payment did not match its billing record" }, { status: 409 });
+      } catch {
+        return NextResponse.json({ error: "Payment could not be recorded; retry required" }, { status: 500 });
+      }
     }
   }
 

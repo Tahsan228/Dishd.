@@ -8,6 +8,7 @@ import { OrderReviewLink } from "@/components/social/order-review-link";
 import { ClearCartOnOrder } from "@/components/market/clear-cart-on-order";
 import { ReportDialog } from "@/components/social/report-dialog";
 import { OrderLiveRefresh } from "@/components/market/order-live-refresh";
+import { DemoAd } from "@/components/market/demo-ad";
 import { formatCents } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/types";
 
@@ -39,7 +40,7 @@ export default async function OrderPage({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      `id, status, payment_method, payment_status, subtotal_cents, pickup_code,
+      `id, status, payment_method, payment_status, subtotal_cents, discount_cents, tip_cents, pickup_code,
        created_at, kitchen_id,
        kitchens ( name, slug, neighborhood_label ),
        order_items ( qty, name_snapshot, unit_price_cents, provenance_snapshot )`,
@@ -174,12 +175,16 @@ export default async function OrderPage({
               </li>
             ))}
           </ul>
+          <dl className="mt-3 space-y-2 border-t border-line pt-3 text-sm">
+            {order.discount_cents > 0 && <div className="flex justify-between gap-3 text-forest"><dt>Reward credit</dt><dd className="tabular">&minus;{formatCents(order.discount_cents)}</dd></div>}
+            <div className="flex justify-between gap-3"><dt>Tip for your cook</dt><dd className="tabular">{formatCents(order.tip_cents)}</dd></div>
+          </dl>
           <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
             <span className="text-sm text-ink-muted">
               Total · {order.payment_method === "cash" ? "cash at pickup" : "card"}
             </span>
             <span className="tabular font-display text-xl text-forest">
-              {formatCents(order.subtotal_cents)}
+              {formatCents(order.subtotal_cents + order.tip_cents)}
             </span>
           </div>
           <p className="mt-3 text-[11px] leading-relaxed text-ink-muted">
@@ -215,6 +220,7 @@ export default async function OrderPage({
             />
           </div>
         )}
+        {order.status === "completed" && <DemoAd variant={2} />}
       </main>
     </>
   );

@@ -14,6 +14,7 @@ import { SiteHeader } from "@/components/market/site-header";
 import { OrderActions } from "@/components/market/order-actions-buttons";
 import { MenuAvailabilityToggle } from "@/components/market/menu-availability-toggle";
 import { scoreKitchen, tierLabel } from "@/lib/social/credibility";
+import { DemoAd } from "@/components/market/demo-ad";
 import { formatCents, toStars } from "@/lib/utils";
 import type { KitchenCounters } from "@/lib/types";
 
@@ -74,7 +75,7 @@ export default async function CookDashboard() {
     supabase
       .from("orders")
       .select(
-        `id, status, payment_method, subtotal_cents, pickup_code, created_at,
+        `id, status, payment_method, subtotal_cents, tip_cents, cash_fee_cents, pickup_code, created_at,
          profiles ( display_name, handle ),
          order_items ( qty, name_snapshot )`,
       )
@@ -176,6 +177,11 @@ export default async function CookDashboard() {
           </p>
         )}
 
+        <Link href="/cook/payments" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-forest/20 bg-forest-soft p-5 text-forest">
+          <span><span className="block text-sm font-medium">Cash sales &amp; payments</span><span className="mt-1 block text-sm">View your 5% cash-sale fees and settle by card. Tips are excluded.</span></span>
+          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
+        </Link>
+
         {/* ------------------------------------------------------ orders --- */}
         <h2 className="mt-8 font-display text-xl text-forest">
           Live orders{" "}
@@ -205,7 +211,7 @@ export default async function CookDashboard() {
                     </div>
                     <div className="text-right">
                       <p className="tabular text-sm font-medium text-forest">
-                        {formatCents(o.subtotal_cents)}
+                        {formatCents(o.subtotal_cents + o.tip_cents)}
                       </p>
                       <p className="text-xs text-ink-muted">
                         {o.payment_method === "cash" ? "Cash at pickup" : "Card"}
@@ -223,6 +229,7 @@ export default async function CookDashboard() {
                     </p>
                   )}
 
+                  <p className="mt-3 text-sm text-ink-muted">Tip: {formatCents(o.tip_cents)}{o.payment_method === "cash" && <> &middot; Dishd fee on collection: {formatCents(o.cash_fee_cents)}</>}</p>
                   <OrderActions orderId={o.id} status={o.status} />
                 </li>
               );
@@ -326,6 +333,7 @@ export default async function CookDashboard() {
             ))}
           </ul>
         )}
+        <DemoAd variant={1} />
       </main>
     </>
   );

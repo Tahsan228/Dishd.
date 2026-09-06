@@ -68,3 +68,14 @@ minus sign belonged.
 - Reviewer queue: `dishd_review_reward_claim` and flag disposition are
   service-role only, with no moderator UI. Claims and reports will sit pending.
 - Stripe Connect: card money lands in the platform account, not the cook's.
+
+## Monetary system checkpoint (Codex, 2026-09-06)
+
+User explicitly requested concurrent, separate payment work while Claude updated the signed-out landing page. Claude's landing/header/location/logo files were left alone, as was the existing preview on port 4173. No subagents were used.
+
+- Migration 0011 adds optional tips (integer cents) and a private 5% cash commission ledger for new orders. Base: discounted food only, rounded half up; tips excluded. Completed cash pickups accrue one fee; canceled orders accrue none; old orders are not charged retroactively.
+- Kitchen owners settle accumulated fees by card at /cook/payments. Seven-day due period; an overdue balance of at least $0.50 pauses new cash orders. Smaller balances carry forward. Existing pickups can still complete.
+- Billing reserves an immutable batch, reuses Stripe sessions, recovers interrupted saves, verifies amount/currency/identity, and settles atomically. Webhooks return retryable errors on failed persistence. Unpaid card orders cannot progress to preparation.
+- Checkout and order/dashboard totals show tips separately. Tips do not enter food revenue, purchase rewards, or credibility. Existing Stripe Connect payout limitation remains: card meal/tip money is held by Dishd pending kitchen payout setup.
+- Fictional demo ads appear on the cook dashboard and completed orders, plus /demo/ads. No ad network, tracking, or real offers.
+- Current checks: TypeScript passes; 244 unit tests and 46 isolated PostgreSQL checks pass. Browser flows and live configuration inspection follow. Migration 0011 has only been applied in isolated test PostgreSQL so far; do not claim live billing verified.

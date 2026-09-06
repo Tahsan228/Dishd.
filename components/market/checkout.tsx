@@ -9,6 +9,7 @@ import { ACKNOWLEDGMENTS } from "@/lib/market/order-consent";
 import { MAX_QTY_PER_ITEM } from "@/lib/market/cart";
 import { formatCents } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { parseTipCents } from "@/lib/market/money";
 
 /**
  * Cart review and checkout.
@@ -38,6 +39,8 @@ export function Checkout({
   }>({ kitchenId: "", acks: {} });
 
   const [rewardId,setRewardId]=useState('');
+  const [tip, setTip] = useState('0');
+  const tipCents = parseTipCents(tip);
   const reward=rewards.find(r=>r.id===rewardId && subtotal>=r.minimum_order_cents);
   const acks = ackState.kitchenId === cart?.kitchenId ? ackState.acks : {};
   const setAcks = (next: Record<string, boolean>) =>
@@ -193,10 +196,24 @@ export function Checkout({
             <Link href="/rewards" className="mt-2 inline-block text-sm text-forest underline">Earn and redeem points</Link>
             {reward && <p className="mt-3 text-sm text-forest">Reward applied: &minus;{formatCents(reward.credit_cents)}</p>}
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
+          <fieldset className="mt-6">
+            <legend className="text-sm font-medium text-ink">A little thanks for your cook</legend>
+            <p id="tip-help" className="mt-1 text-sm text-ink-muted">Optional. Tips go to the kitchen and are excluded from Dishd's cash commission. Pay your tip with your meal.</p>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {['0', '2', '3', '5'].map(value => <button key={value} type="button" aria-pressed={tip === value} onClick={() => setTip(value)} className={cn('min-h-11 rounded-xl border text-sm', tip === value ? 'border-forest bg-forest-soft text-forest' : 'border-line text-ink')}>{value === '0' ? 'No tip' : '$' + value}</button>)}
+            </div>
+            <label htmlFor="tip" className="mt-3 block text-sm text-ink-muted">Custom tip ($)</label>
+            <input id="tip" name="tip" type="text" inputMode="decimal" value={tip} onChange={event => setTip(event.target.value)} aria-describedby="tip-help tip-error" aria-invalid={tipCents === null} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-cream px-3 text-base" />
+            <p id="tip-error" className="mt-1 text-sm text-clay" aria-live="polite">{tipCents === null ? 'Enter $0 to $100, with up to two decimal places.' : ''}</p>
+          </fieldset>
+          <dl className="mt-4 space-y-2 text-sm">
+            <div className="flex justify-between gap-3"><dt>Food after rewards</dt><dd className="tabular">{formatCents(subtotal-(reward?.credit_cents??0))}</dd></div>
+            <div className="flex justify-between gap-3"><dt>Tip</dt><dd className="tabular">{formatCents(tipCents??0)}</dd></div>
+          </dl>
+          <div aria-live="polite" className="mt-4 flex items-center justify-between border-t border-line pt-3">
             <span className="text-sm text-ink-muted">Total</span>
             <span className="tabular font-display text-2xl text-forest">
-              {formatCents(subtotal-(reward?.credit_cents??0))}
+              {formatCents(subtotal-(reward?.credit_cents??0)+(tipCents??0))}
             </span>
           </div>
 
@@ -209,7 +226,7 @@ export function Checkout({
 
           <button
             type="submit"
-            disabled={pending || !allAcked}
+            disabled={pending || !allAcked || tipCents === null}
             className="mt-4 min-h-11 w-full rounded-full bg-forest px-4 text-sm font-medium text-cream hover:bg-forest-deep disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Placing your order…" : "Place order"}

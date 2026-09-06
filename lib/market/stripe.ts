@@ -54,6 +54,7 @@ export async function createCheckoutSession(params: {
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
+    payment_method_types: ["card"],
     // Pickup only: there is nothing to ship, so no address is collected.
     line_items: params.lines.map((line) => ({
       quantity: line.qty,
@@ -64,7 +65,7 @@ export async function createCheckoutSession(params: {
       },
     })),
     client_reference_id: params.orderId,
-    metadata: { orderId: params.orderId },
+    metadata: { kind: "order", orderId: params.orderId },
     payment_intent_data: {
       metadata: { orderId: params.orderId },
       description: `Dishd pickup from ${params.kitchenName}`,
